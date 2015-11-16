@@ -2,6 +2,9 @@ from __future__ import division
 
 import numpy as np
 
+"""
+This is a helper module. It defines useful functions for working with linear SVMs.
+"""
 
 def getHyperplane(clf):
     """
@@ -80,3 +83,29 @@ def hyperplane(clf, X, constant):
         else:
             below = np.vstack((below, X[i]))
     return above[1:], below[1:]
+
+
+def margins(clf, X):
+    """
+    Function that calculates the margins of the given Points and the given classifier. Returns two arrays: One with positive distances (above hyperplane) and one with negative distances (below hyperplane).
+    @param clf: Classifier to be used. LinearSVC expected.
+    @param X: Array of Datapoints to be classified.
+    @return: Points with margins
+    """
+    above = np.array((0, 0, 0))
+    below = np.array((0, 0, 0))
+
+    w = clf.coef_[0]
+    b = clf.intercept_[0]
+
+    for i in range(X.shape[0]):
+        margin = (np.inner(w, X[i]) + b)
+        tmp = np.append(X[i], [margin])
+        if (margin >= 0):
+            above = np.vstack((above, tmp))
+        else:
+            below = np.vstack((below, tmp))
+
+    return above[1:], below[1:]
+
+    # TODO: margins sortieren (beide arrays jeweils einzeln) und n punkte abwechselnd auswaehlen

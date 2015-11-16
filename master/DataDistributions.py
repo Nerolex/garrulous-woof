@@ -4,6 +4,12 @@ import math
 
 import numpy as np
 
+"""
+This module is for data generating purposes.
+"""
+
+
+# TODO: Komplexere Datensaetze importieren
 
 def generateSinusCluster(size, location=0.0, scale=0.5, amplitude=0.2, freq=3):
     """

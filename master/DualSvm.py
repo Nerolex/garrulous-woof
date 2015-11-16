@@ -4,6 +4,13 @@ import numpy as np
 
 import LinearSvmHelper as ls
 
+"""
+This module implements a dual SVM approach to accelerate the fitting and prediction process.
+"""
+
+
+# TODO: Methode implementieren, die Daten anhand Punktemenge anpasst.
+# TODO: Predict und Fit uebernehmen
 
 def getPointsCloseToHyperplaneByFactor(clf, X, factor):
     """
