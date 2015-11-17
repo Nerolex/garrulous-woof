@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy as np
+import sklearn.SVC as SVC
 
 import LinearSvmHelper as ls
 
@@ -11,12 +12,73 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 # TODO: Predict und Fit uebernehmen
 
 class DualSvm(object):
-    def __init__(self, useFactor=True):
+    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor, count):
         """
-        @param useFactor: Boolean that determines if the region for the inner svm should be calculated by a factor or by a number of points.
-        """
-        self.useFactor = useFactor
 
+        @param cLin:      C parameter for linear svm
+        @param cGauss:    C parameter for gaussian svm
+        @param gamma:     Gamma parameter for the gaussian svm
+        @param useFactor: Boolean that determines if the region for the inner svm should be calculated by a factor or by a number of points.
+        @param factor:    Used if useFactor is set to True. Determines a factor which is used to determine close points to the hyperplane.
+        @param count:     Used if useFactor is set to False. Determines a count of points which is used to determine close points to the hyperplane.
+        @return:          Returns self.
+        """
+
+        self._cLin = cLin
+        self._cGauss = cGauss
+        self._gamma = gamma
+        self._useFactor = useFactor
+        self._factor = factor
+        self._count = count
+
+    @property
+    def useFactor(self):
+        return self._useFactor
+
+    @useFactor.setter
+    def useFactor(self, value):
+        self._useFactor = value
+
+    @property
+    def cLin(self):
+        return self._cLin
+
+    @cLin.setter
+    def cLin(self, value):
+        self._cLin = value
+
+    @property
+    def cGauss(self):
+        return self._cGauss
+
+    @cGauss.setter
+    def cGauss(self, value):
+        self._cGauss = value
+
+    @property
+    def gamma(self):
+        return self._gamma
+
+    @gamma.setter
+    def gamma(self, value):
+        self._gamma = value
+
+    @property
+    def factor(self):
+        return self._factor
+
+    @factor.setter
+    def factor(self, value):
+        self._factor = value
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        self._count = value
+        
     def fit(self, X, y):
         # TODO: Cross-Validation?
         """
@@ -24,7 +86,8 @@ class DualSvm(object):
         @param y: Target vector relative to X
         @return: Returns self.
         """
-        
+        linSvm = SVC.LinearSVC()
+
     def getPointsCloseToHyperplaneByFactor(clf, X, factor):
         """
         @param clf: Linear Classifier to be used.
