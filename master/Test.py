@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sklearn.svm as sk
 
 import DataDistributions as dd
+import DualSvm as ds
 import LinearSvmHelper as ls
 
 """
@@ -28,9 +29,8 @@ def runTest():
     plt.plot(xx, yy_down, 'k--')
     plt.plot(xx, yy_up, 'k--')
 
-    outer, inner = ls.margins(linSvm, x)
+    result = ds.getPointsCloseToHyperplaneByCount(linSvm, x, 250)
 
-    plt.scatter(outer[:, 0], outer[:, 1], c=outer[:, 2], cmap=plt.cm.RdYlGn)
-    plt.scatter(inner[:, 0], inner[:, 1], c=-1 * inner[:, 2], cmap=plt.cm.RdYlGn)
-    plt.show()
+    plt.scatter(result[:, 0], result[:, 1], c=-1 * result[:, 2], cmap=plt.cm.RdYlGn)
+    # plt.scatter(inner[:, 0], inner[:, 1], c=-1 * inner[:, 2], cmap=plt.cm.RdYlGn)
     plt.show()
