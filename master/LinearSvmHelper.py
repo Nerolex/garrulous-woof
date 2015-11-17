@@ -19,7 +19,7 @@ def getHyperplane(clf):
     # get the separating hyperplane
     w = clf.coef_[0]
     a = -w[0] / w[1]
-    xx = np.linspace(-5, 5)
+    xx = np.linspace(-2, 2)
     yy = a * xx - (clf.intercept_[0]) / w[1]
 
     # plot the parallels to the separating hyperplane that pass through the
@@ -44,7 +44,7 @@ def getMarginPlanes(clf, factor=1.0):
     # get the separating hyperplane
     w = clf.coef_[0]
     a = -w[0] / w[1]
-    xx = np.linspace(-5, 5)
+    xx = np.linspace(-2, 2)
     yy = a * xx - (clf.intercept_[0]) / w[1]
 
     # plot the parallels to the separating hyperplane that pass through the
@@ -57,7 +57,7 @@ def getMarginPlanes(clf, factor=1.0):
     return yy_down, yy_up
 
 
-def hyperplane(clf, X, constant):
+def hyperplane(clf, X, y, constant):
     """
     Function that classifies points with the hyperplane of the given classifier. A constant is used to move the hyperplane.
 
@@ -65,35 +65,54 @@ def hyperplane(clf, X, constant):
     @param clf: Classifier to be used. LinearSVC expected.
     @type X: Array
     @param X: Array of Datapoints to be classified.
+    @param y: Array of correct labels.
     @type constant: float
     @param constant: Constant that is used to move the hyperplane.
 
     @rtype: Array
-    @return: Points above and below the hyperplane by margin times factor. Array of data points that match the above criterias.
+    @return: Returns 4 Arrays: x_up, y_up, x_down, y_down. Points and Labels above and below the hyperplane.
     """
-    above = np.array((0, 0))
-    below = np.array((0, 0))
+    x_up = np.array((0, 0))
+    y_up = np.array((0))
+    x_down = np.array((0, 0))
+    y_down = np.array((0))
+    
     w = clf.coef_[0]
     b = clf.intercept_[0]
 
     for i in range(X.shape[0]):
         posMargin = (np.inner(w, X[i]) + b) + constant
         if (posMargin >= 0):
-            above = np.vstack((above, X[i]))
+            x_up = np.vstack((x_up, X[i]))
+            y_up = np.append(y_up), y[i]
         else:
-            below = np.vstack((below, X[i]))
-    return above[1:], below[1:]
+            x_down = np.vstack((x_down, X[i]))
+            y_down = np.append(y_down), y[i]
+    return x_up[1:], x_down[1:], y_up[1:], y_down[1:]
 
 
-def margins(clf, X):
+def getMargin(clf, X):
+    # TODO comment
+    w = clf.coef_[0]
+    b = clf.intercept_[0]
+
+    margin = np.inner(w, X) + b
+
+    return margin
+
+
+def margins(clf, X, y):
     """
     Function that calculates the margins of the given Points and the given classifier. Returns two arrays: One with positive distances (above hyperplane) and one with negative distances (below hyperplane).
     @param clf: Classifier to be used. LinearSVC expected.
-    @param X: Array of Datapoints to be classified.
-    @return: Points with margins
+    @param X: Array of datapoints to be classified.
+    @param y: Array of labels.
+    @return: Returns 4 Arrays: x_up, y_up, x_down, y_down. Points and Labels above and below the hyperplane.
     """
-    above = np.array((0, 0, 0))
-    below = np.array((0, 0, 0))
+    x_up = np.array((0, 0, 0))
+    x_down = np.array((0, 0, 0))
+    y_up = np.array(0)
+    y_down = np.array(0)
 
     w = clf.coef_[0]
     b = clf.intercept_[0]
@@ -102,10 +121,9 @@ def margins(clf, X):
         margin = (np.inner(w, X[i]) + b)
         tmp = np.append(X[i], [margin])
         if (margin >= 0):
-            above = np.vstack((above, tmp))
+            x_up = np.vstack((x_up, tmp))
+            y_up = np.append(y_up, y[i])
         else:
-            below = np.vstack((below, tmp))
-
-    return above[1:], below[1:]
-
-    # TODO: margins sortieren (beide arrays jeweils einzeln) und n punkte abwechselnd auswaehlen
+            x_down = np.vstack((x_down, tmp))
+            y_down = np.vstack((y_down, y[i]))
+    return x_up[1:], x_down[1:], y_up[1:], y_down[1:]

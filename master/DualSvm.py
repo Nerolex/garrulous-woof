@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy as np
-import sklearn.SVC as SVC
+import sklearn.svm as SVC
 
 import LinearSvmHelper as ls
 
@@ -12,7 +12,7 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 # TODO: Predict und Fit uebernehmen
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor, count):
+    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0):
         """
 
         @param cLin:      C parameter for linear svm
@@ -24,6 +24,7 @@ class DualSvm(object):
         @return:          Returns self.
         """
 
+        # Paramters
         self._cLin = cLin
         self._cGauss = cGauss
         self._gamma = gamma
@@ -31,50 +32,47 @@ class DualSvm(object):
         self._factor = factor
         self._count = count
 
+        # Intern objects
+        self._linSVC = SVC.LinearSVC(C=self._cLin)
+        self._gaussSVC = SVC.SVC(C=self._cGauss, kernel="rbf", gamma=self._gamma)
+
+
     @property
     def useFactor(self):
         return self._useFactor
-
     @useFactor.setter
     def useFactor(self, value):
         self._useFactor = value
-
     @property
     def cLin(self):
         return self._cLin
-
     @cLin.setter
     def cLin(self, value):
         self._cLin = value
-
+        self._linSVC(C=value)
     @property
     def cGauss(self):
         return self._cGauss
-
     @cGauss.setter
     def cGauss(self, value):
         self._cGauss = value
-
+        self._gaussSVC(C=value)
     @property
     def gamma(self):
         return self._gamma
-
     @gamma.setter
     def gamma(self, value):
         self._gamma = value
-
+        self._gaussSVC(gamma=value)
     @property
     def factor(self):
         return self._factor
-
     @factor.setter
     def factor(self, value):
         self._factor = value
-
     @property
     def count(self):
         return self._count
-
     @count.setter
     def count(self, value):
         self._count = value
@@ -82,26 +80,81 @@ class DualSvm(object):
     def fit(self, X, y):
         # TODO: Cross-Validation?
         """
+        Fits a linear SVC on the given data.
+        Afterwards, certain datapoints are selected and given to a gaussian SVC. The selection is dependant on the attribute L{useFactor} of this object.
+
+
         @param X: Training vector
         @param y: Target vector relative to X
         @return: Returns self.
         """
-        linSvm = SVC.LinearSVC()
+        self._linSVC.fit(X, y)
 
-    def getPointsCloseToHyperplaneByFactor(clf, X, factor):
+        # Determine which method to use for finding points for the gaussian SVC
+        if (self._useFactor == True):
+            x, y, margins = self.getPointsCloseToHyperplaneByFactor(self._linSVC, X, self._factor)
+            self._margins = margins
+        else:
+            x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
+            self._margins = margins
+        # TODO: save x,y for predictions for speed improvements
+
+        self._gaussSVC.fit(x, y)
+
+    def predict(self, X):
+        # TODO: Comment me!
+
+        # Prepare arrays for the data
+        x_lin = (np.zeros(X.shape[1] + 1))
+        x_gauss = (np.zeros(X.shape[1] + 1))
+        i = 0  # Keep track of current position in Vector X
+        for x in X:
+            # Determine where to put the current point
+            margin = ls.getMargin(self._linSVC, x)
+
+            if (margin >= self._margins[0] and margin <= self._margins[1]):
+                tmp = np.append(x, i)
+                x_lin = np.vstack((x_lin, tmp))
+            else:
+                tmp = np.append(x, i)
+                x_gauss = np.vstack((x_gauss, tmp))
+            i += 1
+
+        tmp = x_gauss[1:, [0, 1]]
+        y_gauss = self._gaussSVC.predict(tmp)
+        tmp = x_lin[1:, [0, 1]]
+        y_lin = self._linSVC.predict(tmp)
+
+        # Assign predictions to data points
+        xy_gauss = np.c_[x_gauss[1:, [X.shape[1]]], y_gauss]
+        xy_lin = np.c_[x_lin[1:, [X.shape[1]]], y_lin]
+
+        predictions = np.vstack((xy_lin, xy_gauss))
+        predictions = predictions[predictions[:, 0].argsort()]
+
+        return predictions[:, 1]
+
+    def getPointsCloseToHyperplaneByFactor(self, X, y, factor):
         """
         @param clf: Linear Classifier to be used.
         @param X: Array of unlabeled datapoints.
         @param factor: Factor that determines how close the data should be to the hyperplane.
-        @return: Arrays of data out of and in the scope defined by the other parameters.
+        @return: Returns data and labels within and without the calculated regions.
         """
-        outer, tmp = ls.hyperplane(clf, X, -factor)
-        inner, outer1 = ls.hyperplane(clf, tmp, factor)
-        outer = np.vstack((outer, outer1))
 
-        return outer, inner
+        x_outer, x_tmp, y_outer, y_tmp = ls.hyperplane(self._linSVC, X, y, -factor)
+        x_inner, x_outer1, y_inner, y_outer1 = ls.hyperplane(self._linSVC, x_tmp, y_tmp, factor)
+        # x_outer = np.vstack((x_outer, x_outer1))
+        #y_outer = np.append(y_outer, y_outer1)
 
-    def getPointsCloseToHyperplaneByCount(clf, X, count):
+        # return x_outer, x_inner, y_outer, y_inner DEBUG
+
+        # Keep track of minimal and maximal margins
+        margins = [-factor, factor]
+
+        return x_inner, y_inner, margins
+
+    def getPointsCloseToHyperplaneByCount(self, X, y, count):
         """
 
         @param clf: Linear Classifier to be used.
@@ -115,31 +168,39 @@ class DualSvm(object):
             raise Exception('The count must not be higher than the size of X!')
 
         # Get Margins of all given point
-        above, below = ls.margins(clf, X)
+        x_up, x_down, y_up, y_down = ls.margins(self._linSVC, X, y)
 
+        # Concatenate arrays, so that each point is associated with the correct label
+        x_up_labels = np.c_[x_up, y_up]
+        x_down_labels = np.c_[x_down, y_down]
         # Sort both arrays
-        above = above[above[:,
+        x_up_labels = x_up_labels[x_up_labels[:,
                       2].argsort()]  # see http://stackoverflow.com/questions/2828059/sorting-arrays-in-numpy-by-column for details
-        below = below[below[:, 2].argsort()]
-        result = np.array((0, 0, 0))
+        x_down_labels = x_down_labels[x_down_labels[:, 2].argsort()]
+        result = np.array((0, 0, 0, 0))
 
         # Convert both arrays to lists. This is necessary to use the list.pop() method later on.
-        above = above.tolist()
-        below = below.tolist()
+        x_up_labels = x_up_labels.tolist()
+        x_down_labels = x_down_labels.tolist()
 
         for i in range(count):
             if (i % 2 == 0):  # Take turns in popping elements from either array
                 # Check if an element is present. It could be that one of the arrays is empty, while the other is not. In this case, remove the element from the other array.
-                if (len(above) > 0):
-                    tmp = above.pop(0)
+                if (len(x_up_labels) > 0):
+                    tmp = x_up_labels.pop(0)
                 else:
-                    tmp = below.pop()
+                    tmp = x_down_labels.pop()
                 result = np.vstack((result, tmp))
             else:
-                if (len(below) > 0):
-                    tmp = below.pop()
+                if (len(x_down_labels) > 0):
+                    tmp = x_down_labels.pop()
                 else:
-                    tmp = above.pop()
+                    tmp = x_up_labels.pop()
                 result = np.vstack((result, tmp))
 
-        return result[1:]
+        x = result[:, [0, 1]]
+        y = result[:, 3]
+        margin = result[:, 2]
+        margins = [min(margin), max(margin)]
+
+        return x[1:], y[1:], margins

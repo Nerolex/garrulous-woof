@@ -1,7 +1,6 @@
 from __future__ import division
 
 import matplotlib.pyplot as plt
-import sklearn.svm as sk
 
 import DataDistributions as dd
 import DualSvm as ds
@@ -19,18 +18,15 @@ def runTest():
     freq = 3
 
     x, y = dd.generateSinusCluster(size, location, scale, amplitude, freq)
-    linSvm = sk.LinearSVC().fit(x, y)
 
-    factor = 0.7
+    dualSvm = ds.DualSvm(1, 100, 10, False, 0, 125)
 
-    xx, yy = ls.getHyperplane(linSvm)
-    yy_down, yy_up = ls.getMarginPlanes(linSvm, factor)
-    plt.plot(xx, yy, 'k-')
-    plt.plot(xx, yy_down, 'k--')
-    plt.plot(xx, yy_up, 'k--')
+    dualSvm.fit(x, y)
+    dualSvm.predict(x)
+    xx, yy = ls.getHyperplane(dualSvm._linSVC)
 
-    result = ds.getPointsCloseToHyperplaneByCount(linSvm, x, 250)
-
-    plt.scatter(result[:, 0], result[:, 1], c=-1 * result[:, 2], cmap=plt.cm.RdYlGn)
-    # plt.scatter(inner[:, 0], inner[:, 1], c=-1 * inner[:, 2], cmap=plt.cm.RdYlGn)
+    plt.plot(xx, yy)
+    plt.scatter(x[:, 0], x[:, 1])
+    plt.ylim(-1, 1)
+    plt.xlim(-2, 2)
     plt.show()
