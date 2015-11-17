@@ -84,10 +84,10 @@ def hyperplane(clf, X, y, constant):
         posMargin = (np.inner(w, X[i]) + b) + constant
         if (posMargin >= 0):
             x_up = np.vstack((x_up, X[i]))
-            y_up = np.append(y_up), y[i]
+            y_up = np.append(y_up, y[i])
         else:
             x_down = np.vstack((x_down, X[i]))
-            y_down = np.append(y_down), y[i]
+            y_down = np.append(y_down, y[i])
     return x_up[1:], x_down[1:], y_up[1:], y_down[1:]
 
 

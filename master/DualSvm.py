@@ -92,7 +92,7 @@ class DualSvm(object):
 
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
-            x, y, margins = self.getPointsCloseToHyperplaneByFactor(self._linSVC, X, self._factor)
+            x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
             self._margins = margins
         else:
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
@@ -102,7 +102,11 @@ class DualSvm(object):
         self._gaussSVC.fit(x, y)
 
     def predict(self, X):
-        # TODO: Comment me!
+        """
+
+        @param X:
+        @return:
+        """
 
         # Prepare arrays for the data
         x_lin = (np.zeros(X.shape[1] + 1))
@@ -114,10 +118,10 @@ class DualSvm(object):
 
             if (margin >= self._margins[0] and margin <= self._margins[1]):
                 tmp = np.append(x, i)
-                x_lin = np.vstack((x_lin, tmp))
+                x_gauss = np.vstack((x_gauss, tmp))
             else:
                 tmp = np.append(x, i)
-                x_gauss = np.vstack((x_gauss, tmp))
+                x_lin = np.vstack((x_lin, tmp))
             i += 1
 
         tmp = x_gauss[1:, [0, 1]]
@@ -133,6 +137,11 @@ class DualSvm(object):
         predictions = predictions[predictions[:, 0].argsort()]
 
         return predictions[:, 1]
+
+    def score(self, X, y):
+        y_hat = self.predict(X)
+        score = sum(y_hat * y) / y.shape[0]
+        return score
 
     def getPointsCloseToHyperplaneByFactor(self, X, y, factor):
         """
