@@ -92,7 +92,14 @@ def hyperplane(clf, X, y, constant):
 
 
 def getMargin(clf, X):
-    # TODO comment
+    """
+    Returns the function value of the affine linear function provided by the linear classifier clf.
+
+    @param clf: A Linear SVM.
+    @param X: Datapoints.
+    @return:
+    """
+
     w = clf.coef_[0]
     b = clf.intercept_[0]
 

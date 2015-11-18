@@ -1,5 +1,7 @@
 from __future__ import division
 
+import time
+
 import numpy as np
 import sklearn.svm as SVC
 
@@ -9,7 +11,8 @@ import LinearSvmHelper as ls
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
 """
 
-# TODO: Predict und Fit uebernehmen
+
+# TODO Zeitmessung
 
 class DualSvm(object):
     def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0):
@@ -76,7 +79,12 @@ class DualSvm(object):
     @count.setter
     def count(self, value):
         self._count = value
-        
+
+    def printTableFormatted(self, title, args):
+        print("\t\t\t" + title + "\t\t\t")
+        for arg in args:
+            print(arg[0] + ":\t" + arg[1])
+
     def fit(self, X, y):
         # TODO: Cross-Validation?
         """
@@ -88,8 +96,12 @@ class DualSvm(object):
         @param y: Target vector relative to X
         @return: Returns self.
         """
-        self._linSVC.fit(X, y)
 
+        timeStartLin = time.time()
+        self._linSVC.fit(X, y)
+        timeFitLin = time.time() - timeStartLin
+
+        timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
             x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
@@ -97,9 +109,15 @@ class DualSvm(object):
         else:
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
             self._margins = margins
-        # TODO: save x,y for predictions for speed improvements
+        timeOverhead = time.time() - timeStartOverhead
 
+        timeStartGauss = time.time()
         self._gaussSVC.fit(x, y)
+        timeFitGauss = time.time() - timeStartGauss
+
+        printArgs = [["Fit Linear SVM", '{:f}'.format(timeFitLin)], ["Fit Gaussian SVM", '{:f}'.format(timeFitGauss)],
+                     ["Overhead", '{:f}'.format(timeOverhead)]]
+        self.printTableFormatted("Time to fit:", printArgs)
 
     def predict(self, X):
         """
