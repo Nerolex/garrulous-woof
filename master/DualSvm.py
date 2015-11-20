@@ -11,9 +11,6 @@ import LinearSvmHelper as ls
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
 """
 
-
-# TODO Zeitmessung
-
 class DualSvm(object):
     def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0):
         """
@@ -86,7 +83,6 @@ class DualSvm(object):
             print(arg[0] + ":\t" + arg[1])
 
     def fit(self, X, y):
-        # TODO: Cross-Validation?
         """
         Fits a linear SVC on the given data.
         Afterwards, certain datapoints are selected and given to a gaussian SVC. The selection is dependant on the attribute L{useFactor} of this object.
@@ -134,7 +130,7 @@ class DualSvm(object):
             # Determine where to put the current point
             margin = ls.getMargin(self._linSVC, x)
 
-            if (margin >= self._margins[0] and margin <= self._margins[1]):
+            if self._margins[0] <= margin <= self._margins[1]:
                 tmp = np.append(x, i)
                 x_gauss = np.vstack((x_gauss, tmp))
             else:
@@ -142,9 +138,12 @@ class DualSvm(object):
                 x_lin = np.vstack((x_lin, tmp))
             i += 1
 
-        tmp = x_gauss[1:, [0, 1]]
+        # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
+        toSlice = np.arange(0, x_gauss.shape[1] - 1, 1)
+
+        tmp = x_gauss[1:, toSlice]  # TODO: hard coded slice!
         y_gauss = self._gaussSVC.predict(tmp)
-        tmp = x_lin[1:, [0, 1]]
+        tmp = x_lin[1:, toSlice]
         y_lin = self._linSVC.predict(tmp)
 
         # Assign predictions to data points
@@ -191,7 +190,7 @@ class DualSvm(object):
         """
 
         # prevent invalid user input
-        if count > X.shape[0]:
+        if count > X.shape[1]:
             raise Exception('The count must not be higher than the size of X!')
 
         # Get Margins of all given point
@@ -204,7 +203,7 @@ class DualSvm(object):
         x_up_labels = x_up_labels[x_up_labels[:,
                       2].argsort()]  # see http://stackoverflow.com/questions/2828059/sorting-arrays-in-numpy-by-column for details
         x_down_labels = x_down_labels[x_down_labels[:, 2].argsort()]
-        result = np.array((0, 0, 0, 0))
+        result = np.array(X.shape[1] + 2)  #TODO: Hard coded dimension!
 
         # Convert both arrays to lists. This is necessary to use the list.pop() method later on.
         x_up_labels = x_up_labels.tolist()
@@ -225,9 +224,12 @@ class DualSvm(object):
                     tmp = x_up_labels.pop()
                 result = np.vstack((result, tmp))
 
-        x = result[:, [0, 1]]
-        y = result[:, 3]
-        margin = result[:, 2]
+        # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
+        toSlice = np.arange(0, X.shape[0], 1)
+
+        x = result[:, toSlice]  # TODO: Hard coded slice!
+        y = result[:, result.shape[1] - 1]
+        margin = result[:, result.shape[1] -2]
         margins = [min(margin), max(margin)]
 
         return x[1:], y[1:], margins
