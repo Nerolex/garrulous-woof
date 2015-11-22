@@ -1,6 +1,12 @@
 from __future__ import division
 
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+import sklearn.cross_validation as cv
+import sklearn.datasets as da
+import sklearn.svm as SVC
 
 import DataDistributions as dd
 import DualSvm as ds
@@ -14,42 +20,40 @@ This is a test module.
 
 # TODO GridSearch ausprobieren -> Interface!
 
-def runTest():
-    size = 500
+def load_data(dataType):
+    if dataType == "sinus":
+        x, x_test, y, y_test = load_sinus()
+    elif dataType == "iris":
+        x, x_test, y, y_test = load_iris()
+    return x, x_test, y, y_test
+
+
+def load_iris():
+    data = da.load_iris()
+    y = data.target
+    x = data.data
+    x, x_test, y, y_test = cv.train_test_split(data.data, data.target, test_size=1 / 3)
+    y = np.where(y == 1, -1, 1)
+    y_test = np.where(y_test == 1, -1, 1)
+    return x, x_test, y, y_test
+
+
+def load_sinus():
+    size = 5000
     location = 0.0
     scale = 0.5
     amplitude = 0.3
     freq = 3.5
-
-    factor = 0.7
-    count = round(factor * size)
-
-    # data = da.load_iris()
-    # print(data.data.shape, data.target.shape)
-    # print(data.target)
-    # y = data.target
-    # x = data.data
-    # TODO import Data!
-    # x, x_test, y, y_test = cv.train_test_split(data.data, data.target, test_size=1/7)
-    # y = np.where(y == 0, -1, 1)
-    #y_test = np.where(y_test == 0, -1, 1)
-
-    cLin = 0.01
-    cGauss = 100
-    gamma = 10
-
     x, y = dd.generateSinusCluster(size, location, scale, amplitude, freq)
     x_test, y_test = dd.generateSinusCluster(size * 3, location, scale, amplitude, freq)
-    dualSvm = ds.DualSvm(cLin, cGauss, gamma, True, factor, count)
+    return x, x_test, y, y_test
 
-    dualSvm.fit(x, y)
-    error = 1 - dualSvm.score(x_test, y_test)
-    print("Error: ",error)
 
-    pl.contour(dualSvm, [-2, 2], [-2, 2], 0.02)
+def plot_sinus(x, y, clf, factor):
+    pl.contour(clf, [-2, 2], [-2, 2], 0.02)
 
-    xx, yy = ls.getHyperplane(dualSvm._linSVC)
-    yy_up, yy_down = ls.getMarginPlanes(dualSvm._linSVC, factor)
+    xx, yy = ls.getHyperplane(clf._linSVC)
+    yy_up, yy_down = ls.getMarginPlanes(clf._linSVC, factor)
 
     plt.plot(xx, yy_up, "k--")
     plt.plot(xx, yy_down, "k--")
@@ -57,6 +61,61 @@ def runTest():
     plt.scatter(x[:, 0], x[:, 1], c=y)
     plt.ylim(-2, 2)
     plt.xlim(-2, 2)
-
-
     plt.show()
+
+
+def getClf(clfType):
+    if clfType == "dualSvm":
+        factor = 0.9
+        count = 100
+        cLin = 0.01
+        cGauss = 100
+        gamma = 10
+        return ds.DualSvm(cLin, cGauss, gamma, True, factor, count)
+    elif clfType == "linear":
+        return SVC.LinearSVC(C=0.01)
+    elif clfType == "gauss":
+        return SVC.SVC(kernel="rbf", C=100, gamma=10)
+
+
+def run_test():
+    meanError = 0
+    meanTime = 0
+    numberRuns = 10
+    usedClassifier = "gauss"
+    meanLin = 0
+    meanGauss = 0
+    meanOverhead = 0
+
+    for i in range(numberRuns):
+        x, x_test, y, y_test = load_data("sinus")
+
+        clf = getClf(usedClassifier)
+
+        timeStart = time.time()
+        clf.fit(x, y)
+        meanTime += (time.time() - timeStart) * 1000
+
+        if (usedClassifier == "dualSvm"):
+            meanGauss += clf._timeFitGauss * 1000
+            meanLin += clf._timeFitLin * 1000
+            meanOverhead += clf._timeOverhead * 1000
+
+        meanError += (1 - clf.score(x, y))
+
+    meanError /= numberRuns
+    meanTime /= numberRuns
+
+    if usedClassifier == "dualSvm":
+        meanGauss /= numberRuns
+        meanLin /= numberRuns
+        meanOverhead /= numberRuns
+
+    print(usedClassifier)
+    print("Mean Time to Fit", '{:f}'.format(meanTime), "ms")
+    if usedClassifier == "dualSvm":
+        print("\t gauss:", '{:f}'.format(meanGauss), "ms")
+        print("\t linear:", '{:f}'.format(meanLin), "ms")
+        print("\t overhead:", '{:f}'.format(meanOverhead), "ms")
+    print("Mean Error: ", '{:f}'.format(meanError))
+    # plot_sinus(x, y, dualSvm, factor)

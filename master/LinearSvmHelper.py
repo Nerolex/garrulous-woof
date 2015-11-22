@@ -1,5 +1,7 @@
 from __future__ import division
 
+import time
+
 import numpy as np
 
 """
@@ -72,14 +74,17 @@ def hyperplane(clf, X, y, constant):
     @rtype: Array
     @return: Returns 4 Arrays: x_up, y_up, x_down, y_down. Points and Labels above and below the hyperplane.
     """
-    x_up = np.zeros(X.shape[1])
-    y_up = np.array((0))
-    x_down = np.zeros(X.shape[1])
-    y_down = np.array((0))
-    
+    timeStart = time.time()
+    x_up = np.array([]).reshape(0, X.shape[1])
+    y_up = np.array([]).reshape(0)
+    x_down = np.array([]).reshape(0, X.shape[1])
+    y_down = np.array([]).reshape(0)
+    print("Ls.hyperplane Array reshaping took", (time.time() - timeStart) * 1000, "ms")
+
     w = clf.coef_[0]
     b = clf.intercept_[0]
 
+    timeStart = time.time()
     for i in range(X.shape[0]):
         posMargin = (np.inner(w, X[i]) + b) + constant
         if (posMargin >= 0):
@@ -88,16 +93,7 @@ def hyperplane(clf, X, y, constant):
         else:
             x_down = np.vstack((x_down, X[i]))
             y_down = np.append(y_down, y[i])
-
-    # Check for Empty Values. This is necesarry to avoid out of bound exceptions.
-    # If an array only has the initilization element, skip the slicing.
-    saveSlicing([x_up, x_down, y_up, y_down])
-
-    if x_up.ndim > 1: x_up = x_up[1:]
-    if x_down.ndim > 1: x_down = x_down[1:]
-    if y_up.ndim > 1: y_up = y_up[1:]
-    if y_down.ndim > 1: y_down = y_down[1:]
-
+    print("Ls.hyperplane For looptook", (time.time() - timeStart) * 1000, "ms")
     return x_up, x_down, y_up, y_down
 
 
@@ -126,10 +122,11 @@ def margins(clf, X, y):
     @param y: Array of labels.
     @return: Returns 4 Arrays: x_up, y_up, x_down, y_down. Points and Labels above and below the hyperplane.
     """
-    x_up = np.array(X.shape[1] + 1)
-    x_down = np.array(X.shape[1] +1)
-    y_up = np.array(0)
-    y_down = np.array(0)
+
+    x_up = np.array([]).reshape(0, X.shape[1] + 1)
+    x_down = np.array([]).reshape(0, X.shape[1] + 1)
+    y_up = np.array([]).reshape(0, 1)
+    y_down = np.array([]).reshape(0, 1)
 
     w = clf.coef_[0]
     b = clf.intercept_[0]
@@ -143,12 +140,4 @@ def margins(clf, X, y):
         else:
             x_down = np.vstack((x_down, tmp))
             y_down = np.vstack((y_down, y[i]))
-    return x_up[1:], x_down[1:], y_up[1:], y_down[1:]
-
-
-def saveSlicing(args):
-    results = []
-    for arg in args:
-        if arg.ndim > 1: arg = arg[1:]
-        results.append(arg)
-    return args
+    return x_up, x_down, y_up, y_down

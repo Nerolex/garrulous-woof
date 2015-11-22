@@ -80,8 +80,10 @@ class DualSvm(object):
     def printTableFormatted(self, title, args):
         print("\t\t\t" + title + "\t\t\t")
         for arg in args:
-            print(arg[0] + ":\t" + arg[1])
-
+            line = ""
+            for arg2 in arg:
+                line = line + (arg2 + "\t")
+            print(line)
     def fit(self, X, y):
         """
         Fits a linear SVC on the given data.
@@ -95,7 +97,7 @@ class DualSvm(object):
 
         timeStartLin = time.time()
         self._linSVC.fit(X, y)
-        timeFitLin = time.time() - timeStartLin
+        self._timeFitLin = time.time() - timeStartLin
 
         timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
@@ -105,15 +107,15 @@ class DualSvm(object):
         else:
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
             self._margins = margins
-        timeOverhead = time.time() - timeStartOverhead
+        self._timeOverhead = time.time() - timeStartOverhead
 
         timeStartGauss = time.time()
         self._gaussSVC.fit(x, y)
-        timeFitGauss = time.time() - timeStartGauss
+        self._timeFitGauss = time.time() - timeStartGauss
 
-        printArgs = [["Fit Linear SVM", '{:f}'.format(timeFitLin)], ["Fit Gaussian SVM", '{:f}'.format(timeFitGauss)],
-                     ["Overhead", '{:f}'.format(timeOverhead)]]
-        self.printTableFormatted("Time to fit:", printArgs)
+        # printArgs = [["Fit Linear SVM", '{:f}'.format(timeFitLin*1000), "ms"], ["Fit Gaussian SVM", '{:f}'.format(timeFitGauss*1000), "ms"],
+        #             ["Overhead", '{:f}'.format(timeOverhead*1000), "ms"]]
+        # self.printTableFormatted("Time to fit:", printArgs)
 
     def predict(self, X):
         """
@@ -123,8 +125,9 @@ class DualSvm(object):
         """
 
         # Prepare arrays for the data
-        x_lin = (np.zeros(X.shape[1] + 1))
-        x_gauss = (np.zeros(X.shape[1] + 1))
+        x_lin = np.array([]).reshape(0, X.shape[1] + 1)
+        x_gauss = np.array([]).reshape(0, X.shape[1] + 1)
+
         i = 0  # Keep track of current position in Vector X
         for x in X:
             # Determine where to put the current point
@@ -141,14 +144,20 @@ class DualSvm(object):
         # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
         toSlice = np.arange(0, x_gauss.shape[1] - 1, 1)
 
-        tmp = x_gauss[1:, toSlice]  # TODO: hard coded slice!
-        y_gauss = self._gaussSVC.predict(tmp)
-        tmp = x_lin[1:, toSlice]
-        y_lin = self._linSVC.predict(tmp)
+        tmp = x_gauss[:, toSlice]  # TODO: Does this work as intended?
+        if tmp.size > 0:
+            y_gauss = self._gaussSVC.predict(tmp)
+        else:
+            y_gauss = []
+        tmp = x_lin[:, toSlice]
+        if tmp.size > 0:
+            y_lin = self._linSVC.predict(tmp)
+        else:
+            y_lin = []
 
         # Assign predictions to data points
-        xy_gauss = np.c_[x_gauss[1:, [X.shape[1]]], y_gauss]
-        xy_lin = np.c_[x_lin[1:, [X.shape[1]]], y_lin]
+        xy_gauss = np.c_[x_gauss[:, [X.shape[1]]], y_gauss]
+        xy_lin = np.c_[x_lin[:, [X.shape[1]]], y_lin]
 
         predictions = np.vstack((xy_lin, xy_gauss))
         predictions = predictions[predictions[:, 0].argsort()]
@@ -168,8 +177,12 @@ class DualSvm(object):
         @return: Returns data and labels within and without the calculated regions.
         """
 
+        timeStart = time.time()
         x_outer, x_tmp, y_outer, y_tmp = ls.hyperplane(self._linSVC, X, y, -factor)
+        print("getPointsCloseToHyperplaneByFactor 1st plane:", (time.time() - timeStart) * 1000)
+        timeStart = time.time()
         x_inner, x_outer1, y_inner, y_outer1 = ls.hyperplane(self._linSVC, x_tmp, y_tmp, factor)
+        print("getPointsCloseToHyperplaneByFactor 2nd plane:", (time.time() - timeStart) * 1000)
         # x_outer = np.vstack((x_outer, x_outer1))
         #y_outer = np.append(y_outer, y_outer1)
 
@@ -190,7 +203,7 @@ class DualSvm(object):
         """
 
         # prevent invalid user input
-        if count > X.shape[1]:
+        if count > X.shape[0]:
             raise Exception('The count must not be higher than the size of X!')
 
         # Get Margins of all given point
@@ -203,7 +216,7 @@ class DualSvm(object):
         x_up_labels = x_up_labels[x_up_labels[:,
                       2].argsort()]  # see http://stackoverflow.com/questions/2828059/sorting-arrays-in-numpy-by-column for details
         x_down_labels = x_down_labels[x_down_labels[:, 2].argsort()]
-        result = np.array(X.shape[1] + 2)  #TODO: Hard coded dimension!
+        result = np.array([]).reshape(0, X.shape[1] + 2)  #TODO: Does this work as intended?
 
         # Convert both arrays to lists. This is necessary to use the list.pop() method later on.
         x_up_labels = x_up_labels.tolist()
@@ -225,11 +238,11 @@ class DualSvm(object):
                 result = np.vstack((result, tmp))
 
         # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
-        toSlice = np.arange(0, X.shape[0], 1)
+        toSlice = np.arange(0, X.shape[1], 1)
 
-        x = result[:, toSlice]  # TODO: Hard coded slice!
+        x = result[:, toSlice]  # TODO: Does this work as intended?
         y = result[:, result.shape[1] - 1]
         margin = result[:, result.shape[1] -2]
         margins = [min(margin), max(margin)]
 
-        return x[1:], y[1:], margins
+        return x, y, margins

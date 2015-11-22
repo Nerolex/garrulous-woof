@@ -1,3 +1,3 @@
 import Test as test
 
-test.runTest()
+test.run_test()
