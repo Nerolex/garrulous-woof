@@ -84,7 +84,6 @@ def hyperplane(clf, X, y, constant):
     w = clf.coef_[0]
     b = clf.intercept_[0]
 
-    timeStart = time.time()
     for i in range(X.shape[0]):
         posMargin = (np.inner(w, X[i]) + b) + constant
         if (posMargin >= 0):
@@ -93,7 +92,6 @@ def hyperplane(clf, X, y, constant):
         else:
             x_down = np.vstack((x_down, X[i]))
             y_down = np.append(y_down, y[i])
-    print("Ls.hyperplane For looptook", (time.time() - timeStart) * 1000, "ms")
     return x_up, x_down, y_up, y_down
 
 
@@ -114,7 +112,7 @@ def getMargin(clf, X):
     return margin
 
 
-def margins(clf, X, y):
+def marginsSorted(clf, X, y):
     """
     Function that calculates the margins of the given Points and the given classifier. Returns two arrays: One with positive distances (above hyperplane) and one with negative distances (below hyperplane).
     @param clf: Classifier to be used. LinearSVC expected.

@@ -102,7 +102,9 @@ class DualSvm(object):
         timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
-            x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
+            timeStart = time.time()
+            x, y, margins = self.getPointsCloseToHyperplaneByFactor2(X, y, self._factor)
+            print("Time Calc points:", (time.time() - timeStart) * 1000)
             self._margins = margins
         else:
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
@@ -166,7 +168,11 @@ class DualSvm(object):
 
     def score(self, X, y):
         y_hat = self.predict(X)
-        score = sum(y_hat * y) / y.shape[0]
+        score = 0
+        for i in range(y.shape[0]):
+            if y[i] == y_hat[i]:
+                score += 1
+        score /= y.shape[0]
         return score
 
     def getPointsCloseToHyperplaneByFactor(self, X, y, factor):
@@ -179,15 +185,26 @@ class DualSvm(object):
 
         timeStart = time.time()
         x_outer, x_tmp, y_outer, y_tmp = ls.hyperplane(self._linSVC, X, y, -factor)
-        print("getPointsCloseToHyperplaneByFactor 1st plane:", (time.time() - timeStart) * 1000)
-        timeStart = time.time()
         x_inner, x_outer1, y_inner, y_outer1 = ls.hyperplane(self._linSVC, x_tmp, y_tmp, factor)
-        print("getPointsCloseToHyperplaneByFactor 2nd plane:", (time.time() - timeStart) * 1000)
-        # x_outer = np.vstack((x_outer, x_outer1))
-        #y_outer = np.append(y_outer, y_outer1)
 
-        # return x_outer, x_inner, y_outer, y_inner DEBUG
+        # Keep track of minimal and maximal margins
+        margins = [-factor, factor]
 
+        return x_inner, y_inner, margins
+
+    def getPointsCloseToHyperplaneByFactor2(self, X, y, factor):
+        """
+        @param clf: Linear Classifier to be used.
+        @param X: Array of unlabeled datapoints.
+        @param factor: Factor that determines how close the data should be to the hyperplane.
+        @return: Returns data and labels within and without the calculated regions.
+        """
+
+        timeStart = time.time()
+        margins = ls.getMargin(self._linSVC, X)
+        indices = np.where(abs(margins) <= factor)
+        x_inner = X[indices]
+        y_inner = y[indices]
         # Keep track of minimal and maximal margins
         margins = [-factor, factor]
 
@@ -195,7 +212,6 @@ class DualSvm(object):
 
     def getPointsCloseToHyperplaneByCount(self, X, y, count):
         """
-
         @param clf: Linear Classifier to be used.
         @param X: Array of unlabeled datapoints.
         @param count: Count of points to be taken into consideration
@@ -207,7 +223,7 @@ class DualSvm(object):
             raise Exception('The count must not be higher than the size of X!')
 
         # Get Margins of all given point
-        x_up, x_down, y_up, y_down = ls.margins(self._linSVC, X, y)
+        x_up, x_down, y_up, y_down = ls.marginsSorted(self._linSVC, X, y)
 
         # Concatenate arrays, so that each point is associated with the correct label
         x_up_labels = np.c_[x_up, y_up]
@@ -246,3 +262,10 @@ class DualSvm(object):
         margins = [min(margin), max(margin)]
 
         return x, y, margins
+
+    def get_params(self):
+        # TODO implement me
+        return -1
+
+    def getMargin(self, x):
+        return ls.getMargin(self._linSVC, x)
