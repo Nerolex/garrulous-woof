@@ -3,6 +3,7 @@ from __future__ import division
 import time
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 """
 This is a helper module. It defines useful functions for working with linear SVMs.
@@ -104,10 +105,12 @@ def getMargin(clf, X):
     @return:
     """
 
+    # TODO: dot methode von sparse-matrix benutzen, aber auf den datenvektor zuschneidern. Problem: AUch alles auf datenvektor-matrix möglich?
     w = clf.coef_[0]
+    w = np.transpose(csr_matrix(w))
     b = clf.intercept_[0]
 
-    margin = np.inner(w, X) + b
+    margin = w.dot(X) + b
 
     return margin
 

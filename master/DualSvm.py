@@ -103,10 +103,11 @@ class DualSvm(object):
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
             timeStart = time.time()
-            x, y, margins = self.getPointsCloseToHyperplaneByFactor2(X, y, self._factor)
+            x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
             print("Time Calc points:", (time.time() - timeStart) * 1000)
             self._margins = margins
         else:
+            # TODO: this method needs changing and should not be used.
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
             self._margins = margins
         self._timeOverhead = time.time() - timeStartOverhead
@@ -184,23 +185,6 @@ class DualSvm(object):
         """
 
         timeStart = time.time()
-        x_outer, x_tmp, y_outer, y_tmp = ls.hyperplane(self._linSVC, X, y, -factor)
-        x_inner, x_outer1, y_inner, y_outer1 = ls.hyperplane(self._linSVC, x_tmp, y_tmp, factor)
-
-        # Keep track of minimal and maximal margins
-        margins = [-factor, factor]
-
-        return x_inner, y_inner, margins
-
-    def getPointsCloseToHyperplaneByFactor2(self, X, y, factor):
-        """
-        @param clf: Linear Classifier to be used.
-        @param X: Array of unlabeled datapoints.
-        @param factor: Factor that determines how close the data should be to the hyperplane.
-        @return: Returns data and labels within and without the calculated regions.
-        """
-
-        timeStart = time.time()
         margins = ls.getMargin(self._linSVC, X)
         indices = np.where(abs(margins) <= factor)
         x_inner = X[indices]
@@ -217,6 +201,7 @@ class DualSvm(object):
         @param count: Count of points to be taken into consideration
         @return: Array of points defined by the other parameters
         """
+        #TODO: This method needs changing! Take a subsample of the points by factor!
 
         # prevent invalid user input
         if count > X.shape[0]:

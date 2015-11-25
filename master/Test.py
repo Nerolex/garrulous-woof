@@ -3,50 +3,18 @@ from __future__ import division
 import time
 
 import matplotlib.pyplot as plt
-import numpy as np
-import sklearn.cross_validation as cv
-import sklearn.datasets as da
 import sklearn.svm as SVC
 
-import DataDistributions as dd
+import DataLoader as dl
 import DualSvm as ds
 import LinearSvmHelper as ls
 import PlotHelper as pl
 
 """
-This is a test module.
+This is a testing module.
 """
 
-
 # TODO GridSearch ausprobieren -> Interface!
-
-def load_data(dataType):
-    if dataType == "sinus":
-        x, x_test, y, y_test = load_sinus()
-    elif dataType == "iris":
-        x, x_test, y, y_test = load_iris()
-    return x, x_test, y, y_test
-
-
-def load_iris():
-    data = da.load_iris()
-    y = data.target
-    x = data.data
-    x, x_test, y, y_test = cv.train_test_split(data.data, data.target, test_size=1 / 3)
-    y = np.where(y == 1, -1, 1)
-    y_test = np.where(y_test == 1, -1, 1)
-    return x, x_test, y, y_test
-
-
-def load_sinus():
-    size = 5000
-    location = 0.0
-    scale = 0.5
-    amplitude = 0.3
-    freq = 3.5
-    x, y = dd.generateSinusCluster(size, location, scale, amplitude, freq)
-    x_test, y_test = dd.generateSinusCluster(size * 3, location, scale, amplitude, freq)
-    return x, x_test, y, y_test
 
 
 def plot_sinus(x, y, clf, factor):
@@ -88,7 +56,7 @@ def run_test():
     meanOverhead = 0
 
     for i in range(numberRuns):
-        x, x_test, y, y_test = load_data("sinus")
+        x, x_test, y, y_test = dl.load_data("sinus")
 
         clf = getClf(usedClassifier)
 
@@ -123,27 +91,9 @@ def run_test():
 
 
 def run_test1():
-    x, x_test, y, y_test = load_data("sinus")
+    x, x_test, y, y_test = dl.load_data("codrna")
+
     clf = getClf("dualSvm")
     clf.fit(x, y)
-
-    plot_sinus(x, y, clf, 0.7)
-
-
-def run_test2():
-    a = np.zeros((500, 1))
-    a = np.where(a == 0, 5, 0)
-    b = np.zeros((500, 1))
-    b = np.where(b == 5, 1, 0)
-    c = np.zeros((500, 1))
-    c = np.where(c == 0, 5, 0)
-    d = np.vstack((a, b, c))
-
-    timeStart1 = time.time()
-    e = (np.where(d == 0))[0]
-    print("Time Where d==0:", (time.time() - timeStart1) * 1000)
-    # print(e)
-    timeStart2 = time.time()
-    f = d[e]
-    print("Time d[e]", (time.time() - timeStart2) * 1000)
-    # print(d[e])
+    print(1 - clf.score(x, y))
+    # plot_sinus(x, y, clf, 0.7)
