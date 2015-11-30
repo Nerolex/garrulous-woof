@@ -16,8 +16,8 @@ def load_data(dataType):
 
 
 def load_codrna():
-    data, target = da.load_svmlight_file("data/cod_rna/cod-rna.txt", 8)
-    x, x_test, y, y_test = data, data, target, target
+    x, y = da.load_svmlight_file("data/cod_rna/cod-rna.txt", 8)
+    x_test, y_test = da.load_svmlight_file("data/cod_rna/cod-rna.t", 8)
     # = cv.train_test_split(data, data, test_size=1 / 3)
 
     return x, x_test, y, y_test

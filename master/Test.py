@@ -91,9 +91,13 @@ def run_test():
 
 
 def run_test1():
+    # ToDO: Anscheinend ist cod-rna linear sehr gut separierbar. Suche nach Datensätzen, bei dem dies nicht der Fall ist.
     x, x_test, y, y_test = dl.load_data("codrna")
-
-    clf = getClf("dualSvm")
+    timeStart = time.time()
+    clf = getClf("linear")
     clf.fit(x, y)
-    print(1 - clf.score(x, y))
-    # plot_sinus(x, y, clf, 0.7)
+    print("Time to fit: ", time.time() - timeStart)
+    print("Error: ", 1 - clf.score(x_test, y_test))
+    # print("Fit gauss:", clf._timeFitGauss)
+    # print("Fit lin:", clf._timeFitLin)
+    #print("Overhead:", clf._timeOverhead)

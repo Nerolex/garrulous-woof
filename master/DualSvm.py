@@ -1,9 +1,11 @@
 from __future__ import division
 
+import collections
 import time
 
 import numpy as np
 import sklearn.svm as SVC
+from scipy.sparse import vstack
 
 import LinearSvmHelper as ls
 
@@ -120,7 +122,7 @@ class DualSvm(object):
         #             ["Overhead", '{:f}'.format(timeOverhead*1000), "ms"]]
         # self.printTableFormatted("Time to fit:", printArgs)
 
-    def predict(self, X):
+    def predict_obsolete(self, X):
         """
 
         @param X:
@@ -128,8 +130,9 @@ class DualSvm(object):
         """
 
         # Prepare arrays for the data
-        x_lin = np.array([]).reshape(0, X.shape[1] + 1)
-        x_gauss = np.array([]).reshape(0, X.shape[1] + 1)
+        size = X.shape[1] + 1
+        x_lin = np.array([]).reshape(0, size)
+        x_gauss = np.array([]).reshape(0, size)
 
         i = 0  # Keep track of current position in Vector X
         for x in X:
@@ -167,6 +170,76 @@ class DualSvm(object):
 
         return predictions[:, 1]
 
+    def predict(self, X):
+        """
+
+        @param X:
+        @return:
+        """
+
+        # Prepare dictionaries for the data
+        x_lin = {}
+        x_gauss = {}
+
+        i = 0  # Keep track of current position in Vector X
+        for x in X:
+            # Determine where to put the current point
+            margin = ls.getMargin(self._linSVC, x)
+
+            if self._margins[0] <= margin <= self._margins[1]:
+                tmp = {i: x}
+                x_gauss.update(tmp)
+                # tmp = np.append(x, i)
+                # x_gauss = np.vstack((x_gauss, tmp))
+            else:
+                tmp = {i: x}
+                x_lin.update(tmp)
+            i += 1
+
+        if len(
+                x_gauss) > 0:  # Check if one of the dictionaries is empty. This could be the case if either all or none points fall into the desired range.
+            try:
+                tmp = vstack(list(x_gauss.values()))  # build a csr_matrix out of the values of the dictionaries
+            except ValueError:
+                tmp = np.vstack(list(x_gauss.values()))
+            y_gauss = self._gaussSVC.predict(tmp)
+        else:
+            y_gauss = []
+        if len(x_lin) > 0:
+            try:
+                tmp = vstack(list(x_lin.values()))  # build a csr_matrix out of the values of the dictionaries
+            except ValueError:
+                tmp = np.vstack(list(x_lin.values()))
+            y_lin = self._linSVC.predict(tmp)
+        else:
+            y_lin = []
+
+        # Debug. Measure the number of points for both classifiers:
+        print("Number of points used for gaussian: ", len(x_gauss), len(x_gauss) / (len(x_gauss) + len(x_lin)) * 100,
+              "% of total.")
+        print("Number of points used for linear: ", len(x_lin), len(x_lin) / (len(x_gauss) + len(x_lin)) * 100,
+              "% of total.")
+
+        # Use the key values of the starting dictionaries to remember the origin of the prediction. In this section of the code, the old dictionarie's values (the data points) are overwritten with the values of the predictions.
+        i = 0
+        for key, item in x_gauss.items():
+            x_gauss[key] = y_gauss[i]
+            i += 1
+        i = 0
+        for key, item in x_lin.items():
+            x_lin[key] = y_lin[i]
+            i += 1
+
+        # Build dictionary of predictions for ordering purposes...
+        predictions = {}
+        x_gauss.update(x_lin)
+        predictions.update(x_gauss)  # ..and start with concatenating the generated dictionaries
+        predictions = collections.OrderedDict(
+            sorted(predictions.items()))  # ..then start sorting the dictionary by its values, to get the original order
+        predictions = np.array(
+            list(predictions.values()))  # extract the values out of the OrderedDict with some casting-magic
+
+        return predictions
     def score(self, X, y):
         y_hat = self.predict(X)
         score = 0

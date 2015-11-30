@@ -107,10 +107,13 @@ def getMargin(clf, X):
 
     # TODO: dot methode von sparse-matrix benutzen, aber auf den datenvektor zuschneidern. Problem: AUch alles auf datenvektor-matrix möglich?
     w = clf.coef_[0]
-    w = np.transpose(csr_matrix(w))
     b = clf.intercept_[0]
 
-    margin = w.dot(X) + b
+    # assert type(X) is csr_matrix
+    if type(X) is csr_matrix:
+        margin = X * w + b
+    else:
+        margin = np.dot(X, w) + b
 
     return margin
 
