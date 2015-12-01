@@ -12,6 +12,8 @@ def load_data(dataType):
         x, x_test, y, y_test = load_iris()
     elif dataType == "codrna":
         x, x_test, y, y_test = load_codrna()
+    elif dataType == "covtype":
+        x, x_test, y, y_test = load_covtype()
     return x, x_test, y, y_test
 
 
@@ -41,4 +43,11 @@ def load_sinus():
     freq = 3.5
     x, y = dd.generateSinusCluster(size, location, scale, amplitude, freq)
     x_test, y_test = dd.generateSinusCluster(size * 3, location, scale, amplitude, freq)
+    return x, x_test, y, y_test
+
+
+def load_covtype():
+    data, target = da.load_svmlight_file("data/covtype/covtype.libsvm.binary", 54)
+    target = np.where(target == 1, -1, 1)
+    x, x_test, y, y_test = cv.train_test_split(data, target, test_size=1 / 3)
     return x, x_test, y, y_test

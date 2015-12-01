@@ -189,8 +189,6 @@ class DualSvm(object):
             if self._margins[0] <= margin <= self._margins[1]:
                 tmp = {i: x}
                 x_gauss.update(tmp)
-                # tmp = np.append(x, i)
-                # x_gauss = np.vstack((x_gauss, tmp))
             else:
                 tmp = {i: x}
                 x_lin.update(tmp)

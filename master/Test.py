@@ -34,7 +34,7 @@ def plot_sinus(x, y, clf, factor):
 
 def getClf(clfType):
     if clfType == "dualSvm":
-        factor = 0.7
+        factor = 0.1
         count = 100
         cLin = 0.01
         cGauss = 100
@@ -47,57 +47,19 @@ def getClf(clfType):
 
 
 def run_test():
-    meanError = 0
-    meanTime = 0
-    numberRuns = 10
-    usedClassifier = "linear"
-    meanLin = 0
-    meanGauss = 0
-    meanOverhead = 0
+    _CLASSIFIER = "dualSvm"
+    _DATA = "covtype"
 
-    for i in range(numberRuns):
-        x, x_test, y, y_test = dl.load_data("sinus")
+    x, x_test, y, y_test = dl.load_data(_DATA)
+    clf = getClf(_CLASSIFIER)
 
-        clf = getClf(usedClassifier)
-
-        timeStart = time.time()
-        clf.fit(x, y)
-        meanTime += (time.time() - timeStart) * 1000
-
-        if (usedClassifier == "dualSvm"):
-            meanGauss += clf._timeFitGauss * 1000
-            meanLin += clf._timeFitLin * 1000
-            meanOverhead += clf._timeOverhead * 1000
-
-        meanError += (1 - clf.score(x, y))
-
-    meanError /= numberRuns
-    meanTime /= numberRuns
-
-    if usedClassifier == "dualSvm":
-        meanGauss /= numberRuns
-        meanLin /= numberRuns
-        meanOverhead /= numberRuns
-
-    test = clf.get_params()
-    print(usedClassifier)
-    print("Mean Time to Fit", '{:f}'.format(meanTime), "ms")
-    if usedClassifier == "dualSvm":
-        print("\t gauss:", '{:f}'.format(meanGauss), "ms")
-        print("\t linear:", '{:f}'.format(meanLin), "ms")
-        print("\t overhead:", '{:f}'.format(meanOverhead), "ms")
-    print("Mean Error: ", '{:f}'.format(meanError))
-    # plot_sinus(x, y, dualSvm, factor)
-
-
-def run_test1():
-    # ToDO: Anscheinend ist cod-rna linear sehr gut separierbar. Suche nach Datensätzen, bei dem dies nicht der Fall ist.
-    x, x_test, y, y_test = dl.load_data("codrna")
     timeStart = time.time()
-    clf = getClf("linear")
     clf.fit(x, y)
-    print("Time to fit: ", time.time() - timeStart)
-    print("Error: ", 1 - clf.score(x_test, y_test))
-    # print("Fit gauss:", clf._timeFitGauss)
-    # print("Fit lin:", clf._timeFitLin)
-    #print("Overhead:", clf._timeOverhead)
+    timeFit = time.time() - timeStart
+
+    print("Time to Fit", '{:f}'.format(timeFit), "s")
+    print("Error:", 1 - clf.score(x_test, y_test))
+    if _CLASSIFIER == "dualSvm":
+        print("\t gauss:", '{:f}'.format(clf._timeFitGauss), "s")
+        print("\t linear:", '{:f}'.format(clf._timeFitLin), "s")
+        print("\t overhead:", '{:f}'.format(clf._timeOverhead), "s")
