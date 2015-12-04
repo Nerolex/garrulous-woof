@@ -14,7 +14,6 @@ import PlotHelper as pl
 This is a testing module.
 """
 
-# TODO GridSearch ausprobieren -> Interface!
 
 
 def plot_sinus(x, y, clf, factor):
@@ -32,34 +31,68 @@ def plot_sinus(x, y, clf, factor):
     plt.show()
 
 
+def printLine(size):
+    line = ""
+    for i in range(size):
+        line += "-"
+    print(line)
+
 def getClf(clfType):
     if clfType == "dualSvm":
-        factor = 0.1
-        count = 100
-        cLin = 0.01
-        cGauss = 100
-        gamma = 10
-        return ds.DualSvm(cLin, cGauss, gamma, True, factor, count)
+        useFactor = False
+        factor = 0.8
+        count = 0.1
+        cLin = 10
+        cGauss = 1
+        gamma = 0.3
+        searchLin = True
+        searchGauss = True
+        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss)
     elif clfType == "linear":
-        return SVC.LinearSVC(C=0.01)
+        return SVC.LinearSVC(C=10)
     elif clfType == "gauss":
         return SVC.SVC(kernel="rbf", C=100, gamma=10)
 
 
 def run_test():
-    _CLASSIFIER = "dualSvm"
-    _DATA = "covtype"
+    _CLASSIFIER = "linear"
+    _DATA = "cod-rna"
 
     x, x_test, y, y_test = dl.load_data(_DATA)
+    printDataStatistics(_DATA, x, x_test)
+
     clf = getClf(_CLASSIFIER)
 
     timeStart = time.time()
     clf.fit(x, y)
     timeFit = time.time() - timeStart
 
+    if (_CLASSIFIER == "dualSvm"):
+        printLine(20)
+        # Warum wird hier ein Fehler geworfen?
+        print("Points used for gaussian classifier:", clf._nGauss)
+        print("Points used for linear classifier:", clf._nLin)
+        print("\n")
+
+    printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
+
+
+def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
+    print("Time taken:")
+    printLine(20)
     print("Time to Fit", '{:f}'.format(timeFit), "s")
     print("Error:", 1 - clf.score(x_test, y_test))
     if _CLASSIFIER == "dualSvm":
         print("\t gauss:", '{:f}'.format(clf._timeFitGauss), "s")
         print("\t linear:", '{:f}'.format(clf._timeFitLin), "s")
         print("\t overhead:", '{:f}'.format(clf._timeOverhead), "s")
+
+
+def printDataStatistics(_DATA, x, x_test):
+    print("Data used: ", _DATA)
+    printLine(20)
+    print("Size:")
+    print("Total:\t", x.shape[0] + x_test.shape[0])
+    print("Train:\t", x.shape[0])
+    print("Test:\t", x_test.shape[0])
+    print("\n")

@@ -1,11 +1,14 @@
 from __future__ import division
 
 import collections
+import math
 import time
 
 import numpy as np
 import sklearn.svm as SVC
 from scipy.sparse import vstack
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.grid_search import GridSearchCV
 
 import LinearSvmHelper as ls
 
@@ -14,7 +17,7 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 """
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0):
+    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0, searchGauss=False, searchLin=False):
         """
 
         @param cLin:      C parameter for linear svm
@@ -23,6 +26,8 @@ class DualSvm(object):
         @param useFactor: Boolean that determines if the region for the inner svm should be calculated by a factor or by a number of points.
         @param factor:    Used if useFactor is set to True. Determines a factor which is used to determine close points to the hyperplane.
         @param count:     Used if useFactor is set to False. Determines a count of points which is used to determine close points to the hyperplane.
+        @param searchGauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
+        @param searchLin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
         @return:          Returns self.
         """
 
@@ -33,6 +38,11 @@ class DualSvm(object):
         self._useFactor = useFactor
         self._factor = factor
         self._count = count
+        self._searchGauss = searchGauss
+        self._searchLin = searchLin
+
+        self._nGauss = -1
+        self._nLin = -1
 
         # Intern objects
         self._linSVC = SVC.LinearSVC(C=self._cLin)
@@ -79,6 +89,22 @@ class DualSvm(object):
     def count(self, value):
         self._count = value
 
+    @property
+    def nGauss(self):
+        return self._nGauss
+
+    @nGauss.setter
+    def nGauss(self, value):
+        self._nGauss = value
+
+    @property
+    def nLin(self):
+        return self._nLin
+
+    @nLin.setter
+    def nLin(self, value):
+        self._nLin = value
+
     def printTableFormatted(self, title, args):
         print("\t\t\t" + title + "\t\t\t")
         for arg in args:
@@ -97,22 +123,35 @@ class DualSvm(object):
         @return: Returns self.
         """
 
+        # If set to True, this will search for the best C with gridsearch:
+        if (self._searchLin):
+            self._cLin = self.gridsearchForLinear(X, y)
+
         timeStartLin = time.time()
         self._linSVC.fit(X, y)
         self._timeFitLin = time.time() - timeStartLin
+
+        # Measure the number of points for linear classifier:
+        self._nLin = X.shape[0]
 
         timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
             timeStart = time.time()
             x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
+            self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
             print("Time Calc points:", (time.time() - timeStart) * 1000)
             self._margins = margins
         else:
             # TODO: this method needs changing and should not be used.
             x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
+            self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
             self._margins = margins
         self._timeOverhead = time.time() - timeStartOverhead
+
+        # If set to True, this will search for the best C with gridsearch:
+        if (self._searchLin):
+            self._cGauss, self._gamma = self.gridsearchForGauss(x, y)
 
         timeStartGauss = time.time()
         self._gaussSVC.fit(x, y)
@@ -122,53 +161,6 @@ class DualSvm(object):
         #             ["Overhead", '{:f}'.format(timeOverhead*1000), "ms"]]
         # self.printTableFormatted("Time to fit:", printArgs)
 
-    def predict_obsolete(self, X):
-        """
-
-        @param X:
-        @return:
-        """
-
-        # Prepare arrays for the data
-        size = X.shape[1] + 1
-        x_lin = np.array([]).reshape(0, size)
-        x_gauss = np.array([]).reshape(0, size)
-
-        i = 0  # Keep track of current position in Vector X
-        for x in X:
-            # Determine where to put the current point
-            margin = ls.getMargin(self._linSVC, x)
-
-            if self._margins[0] <= margin <= self._margins[1]:
-                tmp = np.append(x, i)
-                x_gauss = np.vstack((x_gauss, tmp))
-            else:
-                tmp = np.append(x, i)
-                x_lin = np.vstack((x_lin, tmp))
-            i += 1
-
-        # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
-        toSlice = np.arange(0, x_gauss.shape[1] - 1, 1)
-
-        tmp = x_gauss[:, toSlice]  # TODO: Does this work as intended?
-        if tmp.size > 0:
-            y_gauss = self._gaussSVC.predict(tmp)
-        else:
-            y_gauss = []
-        tmp = x_lin[:, toSlice]
-        if tmp.size > 0:
-            y_lin = self._linSVC.predict(tmp)
-        else:
-            y_lin = []
-
-        # Assign predictions to data points
-        xy_gauss = np.c_[x_gauss[:, [X.shape[1]]], y_gauss]
-        xy_lin = np.c_[x_lin[:, [X.shape[1]]], y_lin]
-
-        predictions = np.vstack((xy_lin, xy_gauss))
-        predictions = predictions[predictions[:, 0].argsort()]
-
-        return predictions[:, 1]
 
     def predict(self, X):
         """
@@ -212,12 +204,6 @@ class DualSvm(object):
         else:
             y_lin = []
 
-        # Debug. Measure the number of points for both classifiers:
-        print("Number of points used for gaussian: ", len(x_gauss), len(x_gauss) / (len(x_gauss) + len(x_lin)) * 100,
-              "% of total.")
-        print("Number of points used for linear: ", len(x_lin), len(x_lin) / (len(x_gauss) + len(x_lin)) * 100,
-              "% of total.")
-
         # Use the key values of the starting dictionaries to remember the origin of the prediction. In this section of the code, the old dictionarie's values (the data points) are overwritten with the values of the predictions.
         i = 0
         for key, item in x_gauss.items():
@@ -238,6 +224,7 @@ class DualSvm(object):
             list(predictions.values()))  # extract the values out of the OrderedDict with some casting-magic
 
         return predictions
+
     def score(self, X, y):
         y_hat = self.predict(X)
         score = 0
@@ -272,52 +259,33 @@ class DualSvm(object):
         @param count: Count of points to be taken into consideration
         @return: Array of points defined by the other parameters
         """
-        #TODO: This method needs changing! Take a subsample of the points by factor!
 
         # prevent invalid user input
-        if count > X.shape[0]:
-            raise Exception('The count must not be higher than the size of X!')
+        if count > 1:
+            raise Exception('The count must not be higher than 100%')
 
-        # Get Margins of all given point
-        x_up, x_down, y_up, y_down = ls.marginsSorted(self._linSVC, X, y)
+        timeStart = time.time()
+        margins = abs(ls.getMargin(self._linSVC, X))
 
-        # Concatenate arrays, so that each point is associated with the correct label
-        x_up_labels = np.c_[x_up, y_up]
-        x_down_labels = np.c_[x_down, y_down]
-        # Sort both arrays
-        x_up_labels = x_up_labels[x_up_labels[:,
-                      2].argsort()]  # see http://stackoverflow.com/questions/2828059/sorting-arrays-in-numpy-by-column for details
-        x_down_labels = x_down_labels[x_down_labels[:, 2].argsort()]
-        result = np.array([]).reshape(0, X.shape[1] + 2)  #TODO: Does this work as intended?
+        # Build Array which associates each point with its margin
+        # This could be done with np.c_ , but with respect to sparce matrices, this command wont work
+        Xy_margins = np.array((X.getrow(0), y[0], margins[0]))
+        sizeX = X.get_shape()[0]
+        for i in range(sizeX - 1):
+            Xy_margins = np.vstack((Xy_margins, (X.getrow(i + 1), y[i + 1], margins[i + 1])))
+        Xy_margins = Xy_margins[Xy_margins[:, 2].argsort()]  # Sort by margins
 
-        # Convert both arrays to lists. This is necessary to use the list.pop() method later on.
-        x_up_labels = x_up_labels.tolist()
-        x_down_labels = x_down_labels.tolist()
+        # Build sparse matrix by procentual value
+        nPoints = math.ceil(count * X.get_shape()[0])  #Get the numerical value of points to take
 
-        for i in range(count):
-            if (i % 2 == 0):  # Take turns in popping elements from either array
-                # Check if an element is present. It could be that one of the arrays is empty, while the other is not. In this case, remove the element from the other array.
-                if (len(x_up_labels) > 0):
-                    tmp = x_up_labels.pop(0)
-                else:
-                    tmp = x_down_labels.pop()
-                result = np.vstack((result, tmp))
-            else:
-                if (len(x_down_labels) > 0):
-                    tmp = x_down_labels.pop()
-                else:
-                    tmp = x_up_labels.pop()
-                result = np.vstack((result, tmp))
+        tmp = Xy_margins[:nPoints, 0]
+        X_inner = vstack(tmp)  # Take the nPoints first Points out of the array (sorted by margin)
+        y_inner = Xy_margins[:nPoints, 1].tolist()  #Take the nPoints first labels out of the array
 
-        # Keep track of which dimensions to slice. Try only to slice the first columns, in which the data lies:
-        toSlice = np.arange(0, X.shape[1], 1)
+        max_Margin = Xy_margins[nPoints, 2]
+        margins = [-max_Margin, max_Margin]
 
-        x = result[:, toSlice]  # TODO: Does this work as intended?
-        y = result[:, result.shape[1] - 1]
-        margin = result[:, result.shape[1] -2]
-        margins = [min(margin), max(margin)]
-
-        return x, y, margins
+        return X_inner, y_inner, margins
 
     def get_params(self):
         # TODO implement me
@@ -325,3 +293,31 @@ class DualSvm(object):
 
     def getMargin(self, x):
         return ls.getMargin(self._linSVC, x)
+
+    def gridsearchForLinear(self, X, y):
+        # LinSvm gridSearch
+        param_grid = [
+            {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
+        cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
+        grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid, cv=cv)
+        grid.fit(X, y)
+
+        C = grid.best_params_['C']
+        print("Linear C:", C)
+
+        return C
+
+    def gridsearchForGauss(self, X, y):
+        param_grid = [
+            {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+             'kernel': ['rbf']}, ]
+        cv = StratifiedShuffleSplit(y, n_iter=3, test_size=0.2, random_state=42)
+        grid = GridSearchCV(SVC.SVC(), param_grid=param_grid, cv=cv)
+        grid.fit(X, y)
+
+        C = grid.best_params_['C']
+        gamma = grid.best_params_['gamma']
+
+        print("Gauss C: ", C, "Gauss gamma: ", gamma)
+
+        return C, gamma
