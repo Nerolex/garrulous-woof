@@ -24,8 +24,8 @@ def getClf(clfType):
         cLin = 10
         cGauss = 1
         gamma = 0.3
-        searchLin = True
-        searchGauss = True
+        searchLin = False
+        searchGauss = False
         return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, True)
     elif clfType == "linear":
         return SVC.LinearSVC(C=10)
