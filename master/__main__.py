@@ -55,6 +55,11 @@ def printDataStatistics(_DATA, x, x_test):
 
 
 def main(args):
+    '''
+    Usage: e.g. master linear iris
+    @param args:
+    @return:
+    '''
     classifiers = ["gauss", "linear", "dualSvm"]
     data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
     _CLASSIFIER = 0
