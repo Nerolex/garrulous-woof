@@ -69,11 +69,13 @@ def main(args):
         if (args[1] in classifiers):
             _CLASSIFIER = args[1]
         else:
-            raise (ValueError("Classifier not recognized."))
+            raise (
+                ValueError(
+                    "Classifier not recognized. Did you try one of the avaiable classifiers? (" + classifiers + ")"))
         if (args[2] in data):
             _DATA = args[2]
         else:
-            raise (ValueError("Data not recognized."))
+            raise (ValueError("Data not recognized. Did you try one of the avaiable datasets? (" + data + ")"))
 
         x, x_test, y, y_test = dl.load_data(_DATA)
         printDataStatistics(_DATA, x, x_test)
