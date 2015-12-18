@@ -1,35 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
 
+import sys
 import time
 
-import matplotlib.pyplot as plt
 import sklearn.svm as SVC
 
 import DataLoader as dl
 import DualSvm as ds
-import LinearSvmHelper as ls
-import PlotHelper as pl
-
-"""
-This is a testing module.
-"""
-
-
-
-def plot_sinus(x, y, clf, factor):
-    pl.contour(clf, [-2, 2], [-2, 2], 0.02)
-
-    xx, yy = ls.getHyperplane(clf._linSVC)
-    yy_up, yy_down = ls.getMarginPlanes(clf._linSVC, factor)
-
-    plt.plot(xx, yy_up, "k--")
-    plt.plot(xx, yy_down, "k--")
-    plt.plot(xx, yy)
-    plt.scatter(x[:, 0], x[:, 1], c=y)
-    plt.ylim(-2, 2)
-    plt.xlim(-2, 2)
-    plt.show()
 
 
 def printLine(size):
@@ -37,6 +14,7 @@ def printLine(size):
     for i in range(size):
         line += "-"
     print(line)
+
 
 def getClf(clfType):
     if clfType == "dualSvm":
@@ -48,34 +26,11 @@ def getClf(clfType):
         gamma = 0.3
         searchLin = True
         searchGauss = True
-        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss)
+        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, True)
     elif clfType == "linear":
         return SVC.LinearSVC(C=10)
     elif clfType == "gauss":
         return SVC.SVC(kernel="rbf", C=100, gamma=10)
-
-
-def run_test():
-    _CLASSIFIER = "linear"
-    _DATA = "ijcnn"
-
-    x, x_test, y, y_test = dl.load_data(_DATA)
-    printDataStatistics(_DATA, x, x_test)
-
-    clf = getClf(_CLASSIFIER)
-
-    timeStart = time.time()
-    clf.fit(x, y)
-    timeFit = time.time() - timeStart
-
-    if (_CLASSIFIER == "dualSvm"):
-        printLine(20)
-        # Warum wird hier ein Fehler geworfen?
-        print("Points used for gaussian classifier:", clf._nGauss)
-        print("Points used for linear classifier:", clf._nLin)
-        print("\n")
-
-    printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
 
 
 def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
@@ -97,3 +52,46 @@ def printDataStatistics(_DATA, x, x_test):
     print("Train:\t", x.shape[0])
     print("Test:\t", x_test.shape[0])
     print("\n")
+
+
+def main(args):
+    classifiers = ["gauss", "linear", "dualSvm"]
+    data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
+    _CLASSIFIER = 0
+    _DATA = 0
+
+    if len(args) == 3:
+        if (args[1] in classifiers):
+            _CLASSIFIER = args[1]
+        else:
+            raise (ValueError("Classifier not recognized."))
+        if (args[2] in data):
+            _DATA = args[2]
+        else:
+            raise (ValueError("Data not recognized."))
+
+        x, x_test, y, y_test = dl.load_data(_DATA)
+        printDataStatistics(_DATA, x, x_test)
+
+        clf = getClf(_CLASSIFIER)
+
+        timeStart = time.time()
+        clf.fit(x, y)
+        timeFit = time.time() - timeStart
+
+        if (_CLASSIFIER == "dualSvm"):
+            printLine(20)
+            print("Points used for gaussian classifier:", clf._nGauss)
+            print("Points used for linear classifier:", clf._nLin)
+            print("\n")
+
+        printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
+    else:
+        print(args)
+        raise (ValueError("Invalid number of arguments."))
+
+
+# test.run_test()
+print(len(sys.argv))
+print(sys.argv)
+main(sys.argv)

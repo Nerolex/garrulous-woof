@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 
 import collections
@@ -17,7 +18,8 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 """
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0, searchGauss=False, searchLin=False):
+    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0, searchGauss=False, searchLin=False,
+                 verbose=False):
         """
 
         @param cLin:      C parameter for linear svm
@@ -43,6 +45,7 @@ class DualSvm(object):
 
         self._nGauss = -1
         self._nLin = -1
+        self._verbose = verbose
 
         # Intern objects
         self._linSVC = SVC.LinearSVC(C=self._cLin)
@@ -123,17 +126,27 @@ class DualSvm(object):
         @return: Returns self.
         """
 
+        if (self._verbose):
+            print("Starting fitting process.")
+
         # If set to True, this will search for the best C with gridsearch:
         if (self._searchLin):
+            if (self._verbose):
+                print("Starting Gridsearch for linear SVC.")
             self._cLin = self.gridsearchForLinear(X, y)
 
+        if (self._verbose):
+            print("\t Starting fitting process for linear SVC.")
         timeStartLin = time.time()
         self._linSVC.fit(X, y)
         self._timeFitLin = time.time() - timeStartLin
-
+        if (self._verbose):
+            print("\t Completed fitting process for linear SVC.")
         # Measure the number of points for linear classifier:
         self._nLin = X.shape[0]
 
+        if (self._verbose):
+            print("Sorting points for classifiers.")
         timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
@@ -148,15 +161,22 @@ class DualSvm(object):
             self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
             self._margins = margins
         self._timeOverhead = time.time() - timeStartOverhead
+        if (self._verbose):
+            print("Sorting finished.")
 
         # If set to True, this will search for the best C with gridsearch:
         if (self._searchLin):
+            if (self._verbose):
+                print("Starting gridsearch for gaussian classifier.")
             self._cGauss, self._gamma = self.gridsearchForGauss(x, y)
 
+        if (self._verbose):
+            print("\t Starting fitting process for gaussian SVC.")
         timeStartGauss = time.time()
         self._gaussSVC.fit(x, y)
         self._timeFitGauss = time.time() - timeStartGauss
-
+        if (self._verbose):
+            print("\t Completed fitting process for gaussian SVC.")
         # printArgs = [["Fit Linear SVM", '{:f}'.format(timeFitLin*1000), "ms"], ["Fit Gaussian SVM", '{:f}'.format(timeFitGauss*1000), "ms"],
         #             ["Overhead", '{:f}'.format(timeOverhead*1000), "ms"]]
         # self.printTableFormatted("Time to fit:", printArgs)
