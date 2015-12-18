@@ -18,7 +18,7 @@ def printLine(size):
 
 def getClf(clfType):
     if clfType == "dualSvm":
-        useFactor = False
+        useFactor = True
         factor = 0.8
         count = 0.1
         cLin = 10
