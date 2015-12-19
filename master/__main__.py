@@ -19,7 +19,7 @@ def printLine(size):
 def getClf(clfType):
     if clfType == "dualSvm":
         # Load config file
-        config = open('master/dualsvm.conf', 'r')
+        config = open('dualsvm.conf', 'r')
         for line in config:
             split_line = line.split(":")
             if (split_line[0] == "useFactor"):
@@ -53,13 +53,15 @@ def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
     print "Time taken:"
     printLine(20)
     print "Time to Fit", '{:f}'.format(timeFit), "s"
-    print "Error:", 1 - clf.score(x_test, y_test)
+    print "Calculating score:"
+    print  1 - clf.score(x_test, y_test)
     if _CLASSIFIER == "dualSvm":
         print "gauss:", '{:f}'.format(clf._timeFitGauss), "s ", round(
-            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss) * 100), 2), "%"
+            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
         print "linear:", '{:f}'.format(clf._timeFitLin), "s", round(
-            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss) * 100), 2), "%"
-        print "overhead:", '{:f}'.format(clf._timeOverhead), "s"
+            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
+        print "overhead:", '{:f}'.format(clf._timeOverhead), "s", round(
+            (clf._timeOverhead / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
 
 
 def printDataStatistics(_DATA, x, x_test):

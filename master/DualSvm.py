@@ -196,23 +196,29 @@ class DualSvm(object):
             print "Starting prediction process."
 
         i = 0  # Keep track of current position in Vector X
+        lastVal = -1
         for x in X:
             if (self._verbose):
                 curPos = round((i / X.shape[0]) * 100, 2)
-                if curPos * 1000 % 100 == 0:
-                    print curPos, "%"
+                if (curPos * 1000 % 1000 == 0) and lastVal != curPos:
+                    lastVal = curPos
+                    print int(curPos), "%"
 
             # Determine where to put the current point
             margin = ls.getMargin(self._linSVC, x)
 
             if self._margins[0] <= margin <= self._margins[1]:
-                tmp = {i: x}
+                tmp = {i: self._gaussSVC.predict(x)}
                 x_gauss.update(tmp)
             else:
-                tmp = {i: x}
+                tmp = {i: self._linSVC.predict(x)}
                 x_lin.update(tmp)
             i += 1
 
+        if (self._verbose):
+            print "Predicting finished."
+
+        '''
         if (self._verbose):
             print "Converting dicts to csr matrices."
         if len(
@@ -246,7 +252,10 @@ class DualSvm(object):
         for key, item in x_lin.items():
             x_lin[key] = y_lin[i]
             i += 1
+        '''
 
+        if (self._verbose):
+            print "Sorting the predicted values, such that they are in the original order..."
         # Build dictionary of predictions for ordering purposes...
         predictions = {}
         x_gauss.update(x_lin)
@@ -255,7 +264,9 @@ class DualSvm(object):
             sorted(predictions.items()))  # ..then start sorting the dictionary by its values, to get the original order
         predictions = np.array(
             list(predictions.values()))  # extract the values out of the OrderedDict with some casting-magic
-
+        if (self._verbose):
+            print "Sorting finished."
+            print "Error:"
         return predictions
 
     def score(self, X, y):
