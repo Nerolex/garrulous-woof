@@ -127,7 +127,7 @@ class DualSvm(object):
         """
 
         if (self._verbose):
-            print("Starting fitting process.")
+            print("Starting fitting process.\n")
 
         # If set to True, this will search for the best C with gridsearch:
         if (self._searchLin):
@@ -146,14 +146,14 @@ class DualSvm(object):
         self._nLin = X.shape[0]
 
         if (self._verbose):
-            print("Sorting points for classifiers.")
+            print(" \t Sorting points for classifiers.")
         timeStartOverhead = time.time()
         # Determine which method to use for finding points for the gaussian SVC
         if (self._useFactor == True):
             timeStart = time.time()
             x, y, margins = self.getPointsCloseToHyperplaneByFactor(X, y, self._factor)
             self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
-            print("Time Calc points:", (time.time() - timeStart) * 1000)
+            print "\t Sorting points took ", round(((time.time() - timeStart) * 1000), 2), "s"
             self._margins = margins
         else:
             # TODO: this method needs changing and should not be used.
@@ -162,12 +162,12 @@ class DualSvm(object):
             self._margins = margins
         self._timeOverhead = time.time() - timeStartOverhead
         if (self._verbose):
-            print("Sorting finished.")
+            print("\t Sorting finished.")
 
         # If set to True, this will search for the best C with gridsearch:
         if (self._searchLin):
             if (self._verbose):
-                print("Starting gridsearch for gaussian classifier.")
+                print("\t Starting gridsearch for gaussian classifier.")
             self._cGauss, self._gamma = self.gridsearchForGauss(x, y)
 
         if (self._verbose):
@@ -177,9 +177,8 @@ class DualSvm(object):
         self._timeFitGauss = time.time() - timeStartGauss
         if (self._verbose):
             print("\t Completed fitting process for gaussian SVC.")
-        # printArgs = [["Fit Linear SVM", '{:f}'.format(timeFitLin*1000), "ms"], ["Fit Gaussian SVM", '{:f}'.format(timeFitGauss*1000), "ms"],
-        #             ["Overhead", '{:f}'.format(timeOverhead*1000), "ms"]]
-        # self.printTableFormatted("Time to fit:", printArgs)
+        if (self._verbose):
+            print("\nFinished fitting process.\n")
 
 
     def predict(self, X):
@@ -193,8 +192,16 @@ class DualSvm(object):
         x_lin = {}
         x_gauss = {}
 
+        if (self._verbose):
+            print "Starting prediction process."
+
         i = 0  # Keep track of current position in Vector X
         for x in X:
+            if (self._verbose):
+                curPos = round((i / X.shape[0]) * 100, 2)
+                if curPos * 1000 % 100 == 0:
+                    print curPos, "%"
+
             # Determine where to put the current point
             margin = ls.getMargin(self._linSVC, x)
 
@@ -206,6 +213,8 @@ class DualSvm(object):
                 x_lin.update(tmp)
             i += 1
 
+        if (self._verbose):
+            print "Converting dicts to csr matrices."
         if len(
                 x_gauss) > 0:  # Check if one of the dictionaries is empty. This could be the case if either all or none points fall into the desired range.
             try:
@@ -223,8 +232,12 @@ class DualSvm(object):
             y_lin = self._linSVC.predict(tmp)
         else:
             y_lin = []
+        if (self._verbose):
+            print "Converting finished."
 
         # Use the key values of the starting dictionaries to remember the origin of the prediction. In this section of the code, the old dictionarie's values (the data points) are overwritten with the values of the predictions.
+        if (self._verbose):
+            print "Preparing data before prediction..."
         i = 0
         for key, item in x_gauss.items():
             x_gauss[key] = y_gauss[i]

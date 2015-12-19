@@ -18,15 +18,31 @@ def printLine(size):
 
 def getClf(clfType):
     if clfType == "dualSvm":
-        useFactor = True
-        factor = 0.8
-        count = 0.1
-        cLin = 10
-        cGauss = 1
-        gamma = 0.3
-        searchLin = False
-        searchGauss = False
-        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, True)
+        # Load config file
+        config = open('master/dualsvm.conf', 'r')
+        for line in config:
+            split_line = line.split(":")
+            if (split_line[0] == "useFactor"):
+                useFactor = split_line[1].strip("\n") == "True"
+            if (split_line[0] == "factor"):
+                factor = float(split_line[1].strip("\n"))
+            if (split_line[0] == "count"):
+                count = float(split_line[1].strip("\n"))
+            if (split_line[0] == "cLin"):
+                cLin = float(split_line[1].strip("\n"))
+            if (split_line[0] == "cGauss"):
+                cGauss = float(split_line[1].strip("\n"))
+            if (split_line[0] == "gamma"):
+                gamma = float(split_line[1].strip("\n"))
+            if (split_line[0] == "searchLin"):
+                searchLin = split_line[1].strip("\n") == "True"
+            if (split_line[0] == "searchGauss"):
+                searchGauss = split_line[1].strip("\n") == "True"
+            if (split_line[0] == "verbose"):
+                verbose = split_line[1].strip("\n") == "True"
+        config.close()
+
+        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, verbose)
     elif clfType == "linear":
         return SVC.LinearSVC(C=10)
     elif clfType == "gauss":
@@ -34,24 +50,26 @@ def getClf(clfType):
 
 
 def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
-    print("Time taken:")
+    print "Time taken:"
     printLine(20)
-    print("Time to Fit", '{:f}'.format(timeFit), "s")
-    print("Error:", 1 - clf.score(x_test, y_test))
+    print "Time to Fit", '{:f}'.format(timeFit), "s"
+    print "Error:", 1 - clf.score(x_test, y_test)
     if _CLASSIFIER == "dualSvm":
-        print("\t gauss:", '{:f}'.format(clf._timeFitGauss), "s")
-        print("\t linear:", '{:f}'.format(clf._timeFitLin), "s")
-        print("\t overhead:", '{:f}'.format(clf._timeOverhead), "s")
+        print "gauss:", '{:f}'.format(clf._timeFitGauss), "s ", round(
+            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss) * 100), 2), "%"
+        print "linear:", '{:f}'.format(clf._timeFitLin), "s", round(
+            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss) * 100), 2), "%"
+        print "overhead:", '{:f}'.format(clf._timeOverhead), "s"
 
 
 def printDataStatistics(_DATA, x, x_test):
-    print("Data used: ", _DATA)
+    print "\nData used: ", _DATA
     printLine(20)
-    print("Size:")
-    print("Total:\t", x.shape[0] + x_test.shape[0])
-    print("Train:\t", x.shape[0])
-    print("Test:\t", x_test.shape[0])
-    print("\n")
+    print "Size:"
+    print "Total:", x.shape[0] + x_test.shape[0]
+    print "Train:", x.shape[0]
+    print "Test:", x_test.shape[0]
+    print "\n"
 
 
 def main(args):
@@ -96,17 +114,15 @@ def main(args):
 
         if (_CLASSIFIER == "dualSvm"):
             printLine(20)
-            print("Points used for gaussian classifier:", clf._nGauss)
-            print("Points used for linear classifier:", clf._nLin)
-            print("\n")
+            print "Points used for gaussian classifier:", clf._nGauss, " ", round(
+                (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2), "%"
+            print "Points used for linear classifier:", clf._nLin, " ", round(
+                (float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2), "%"
+            print "\n"
 
         printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
     else:
         print(args)
         raise (ValueError("Invalid number of arguments."))
 
-
-# test.run_test()
-print(len(sys.argv))
-print(sys.argv)
 main(sys.argv)
