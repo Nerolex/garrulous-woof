@@ -19,7 +19,7 @@ def printLine(size):
 def getClf(clfType):
     if clfType == "dualSvm":
         # Load config file
-        config = open('dualsvm.conf', 'r')
+        config = open('master/dualsvm.conf', 'r')
         for line in config:
             split_line = line.split(":")
             if (split_line[0] == "useFactor"):

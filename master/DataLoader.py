@@ -15,6 +15,8 @@ def load_data(dataType):
         x, x_test, y, y_test = load_covtype()
     elif dataType == "banana":
         x, x_test, y, y_test = load_banana()
+    elif dataType == "skin":
+        x, x_test, y, y_test = load_skin()
     else:
         x, x_test, y, y_test = load_libsvm_file(dataType)
     return x, x_test, y, y_test
@@ -46,13 +48,18 @@ def load_sinus():
 
 
 def load_covtype():
-    # ToDo: Hier schöneren Weg finden, covtype anteilig zu laden
-    _SAMPLESIZE = 0.1
+    SAMPLESIZE = 0.3
 
     data, target = da.load_svmlight_file("data/covtype/covtype.libsvm.binary", 54)
     target = np.where(target == 1, -1, 1)
-    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=_SAMPLESIZE)
-    x_test, o, y_test, o = cv.train_test_split(x_test, y_test, train_size=_SAMPLESIZE)  # DELETE THIS
+    X, NONE, Y, NONE = cv.train_test_split(data, target, train_size=SAMPLESIZE)
+    x, x_test, y, y_test = cv.train_test_split(X, Y, train_size=1 / 3)
+    return x, x_test, y, y_test
+
+
+def load_skin():
+    data, target = da.load_svmlight_file("data/skin-nonskin/skin_nonskin.txt", 54)
+    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=1 / 3)
     return x, x_test, y, y_test
 
 def load_libsvm_file(filename):
@@ -62,7 +69,7 @@ def load_libsvm_file(filename):
     @param filename:
     @return:
     '''
-    filestring = "../data/" + filename + "/" + filename
+    filestring = "data/" + filename + "/" + filename
     x, y = da.load_svmlight_file(filestring + ".txt")
     x_test, y_test = da.load_svmlight_file(filestring + ".t")
     return x, x_test, y, y_test
