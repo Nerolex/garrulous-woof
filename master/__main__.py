@@ -43,7 +43,7 @@ def getClf(clfType):
                 verbose = split_line[1].strip("\n") == "True"
         config.close()
 
-        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, verbose)
+        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchGauss, searchLin, verbose)
     elif clfType == "linear":
         return SVC.LinearSVC(C=0.0001)
     elif clfType == "gauss":
