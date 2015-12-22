@@ -48,7 +48,7 @@ def load_sinus():
 
 
 def load_covtype():
-    SAMPLESIZE = 0.3
+    SAMPLESIZE = 0.1
 
     data, target = da.load_svmlight_file("data/covtype/covtype.libsvm.binary", 54)
     target = np.where(target == 1, -1, 1)
