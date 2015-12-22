@@ -164,7 +164,7 @@ class DualSvm(object):
             print("\t Sorting finished.")
 
         # If set to True, this will search for the best C with gridsearch:
-        if (self._searchLin):
+        if (self._searchGauss):
             if (self._verbose):
                 print("\t Starting gridsearch for gaussian classifier.")
             self._cGauss, self._gamma = self.gridsearchForGauss(x, y)
