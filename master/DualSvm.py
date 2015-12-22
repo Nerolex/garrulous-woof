@@ -14,6 +14,9 @@ import LinearSvmHelper as ls
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
 """
 
+
+# ToDo: Gridsearch - Write to output file
+
 class DualSvm(object):
     def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0, searchGauss=False, searchLin=False,
                  verbose=False):

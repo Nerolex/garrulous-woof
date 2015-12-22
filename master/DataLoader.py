@@ -48,11 +48,11 @@ def load_sinus():
 
 
 def load_covtype():
-    SAMPLESIZE = 0.1
+    SAMPLESIZE = 0.4
 
     data, target = da.load_svmlight_file("data/covtype/covtype.libsvm.binary", 54)
     target = np.where(target == 1, -1, 1)
-    X, ups, Y, ups = cv.train_test_split(data, target, train_size=SAMPLESIZE)
+    X, NONE, Y, NONE = cv.train_test_split(data, target, train_size=SAMPLESIZE)
     x, x_test, y, y_test = cv.train_test_split(X, Y, train_size=0.3)
     return x, x_test, y, y_test
 
