@@ -4,6 +4,7 @@ import sys
 import time
 
 import sklearn.svm as SVC
+from sklearn.grid_search import GridSearchCV
 
 import DataLoader as dl
 import DualSvm as ds
@@ -84,6 +85,7 @@ def main(args):
     data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
     _CLASSIFIER = 0
     _DATA = 0
+    _GRIDSEARCH = True
 
     if len(args) == 3:
         if (args[1] in classifiers):
@@ -109,6 +111,18 @@ def main(args):
         printDataStatistics(_DATA, x, x_test)
 
         clf = getClf(_CLASSIFIER)
+
+        if (_CLASSIFIER == "linear" and _GRIDSEARCH == True):
+            # LinSvm gridSearch
+            param_grid = [
+                {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
+            # cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
+            grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid)
+            grid.fit(x, y)
+
+            C = grid.best_params_['C']
+            print("Linear C:", C)
+            clf.set_params({'C': C})
 
         timeStart = time.time()
         clf.fit(x, y)
