@@ -45,7 +45,7 @@ def getClf(clfType):
 
         return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchLin, searchGauss, verbose)
     elif clfType == "linear":
-        return SVC.LinearSVC(C=10)
+        return SVC.LinearSVC(C=0.0001)
     elif clfType == "gauss":
         return SVC.SVC(kernel="rbf", C=100, gamma=10)
 
@@ -85,7 +85,7 @@ def main(args):
     data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
     _CLASSIFIER = 0
     _DATA = 0
-    _GRIDSEARCH = True
+    _GRIDSEARCH = False
 
     if len(args) == 3:
         if (args[1] in classifiers):
@@ -122,7 +122,7 @@ def main(args):
 
             C = grid.best_params_['C']
             print("Linear C:", C)
-            clf.set_params({'C': C})
+            # clf.set_params({'C': C})
 
         timeStart = time.time()
         clf.fit(x, y)
