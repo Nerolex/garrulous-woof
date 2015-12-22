@@ -8,7 +8,6 @@ import time
 import numpy as np
 import sklearn.svm as SVC
 from scipy.sparse import vstack
-from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
 
 import LinearSvmHelper as ls
@@ -342,8 +341,8 @@ class DualSvm(object):
         # LinSvm gridSearch
         param_grid = [
             {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
-        cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid, cv=cv)
+        # cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
+        grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid)
         grid.fit(X, y)
 
         C = grid.best_params_['C']
@@ -355,8 +354,8 @@ class DualSvm(object):
         param_grid = [
             {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [10, 1, 0.1, 0.01, 0.001, 0.0001],
              'kernel': ['rbf']}, ]
-        cv = StratifiedShuffleSplit(y, n_iter=3, test_size=0.2, random_state=42)
-        grid = GridSearchCV(SVC.SVC(), param_grid=param_grid, cv=cv)
+        # cv = StratifiedShuffleSplit(y, n_iter=3, test_size=0.2, random_state=42)
+        grid = GridSearchCV(SVC.SVC(), param_grid=param_grid)
         grid.fit(X, y)
 
         C = grid.best_params_['C']
