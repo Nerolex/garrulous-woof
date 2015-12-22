@@ -10,11 +10,11 @@ import DataLoader as dl
 import DualSvm as ds
 
 
-def printLine(size):
+def printLine(file, size):
     line = ""
     for i in range(size):
         line += "-"
-    print(line)
+    file.write(line)
 
 
 def getClf(clfType):
@@ -50,29 +50,43 @@ def getClf(clfType):
         return SVC.SVC(kernel="rbf", C=100, gamma=10)
 
 
-def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
-    print "Time taken:"
-    printLine(20)
-    print "Time to Fit", '{:f}'.format(timeFit), "s"
-    print "Calculating score:"
-    print  1 - clf.score(x_test, y_test)
+def printTimeStatistics(file, _CLASSIFIER, clf, timeFit, x_test, y_test):
+    file.write("\n")
+    printLine(file, 20)
+    file.write("Time and Error Statistics")
+    printLine(file, 20)
+    tmp = "\nTime to Fit: " + '{:f}'.format(timeFit) + "s\n"
+    file.write(tmp)
+    error = 1 - clf.score(x_test, y_test)
+    tmp = "Error: " + str(error) + "\n"
+    file.write(tmp)
     if _CLASSIFIER == "dualSvm":
-        print "gauss:", '{:f}'.format(clf._timeFitGauss), "s ", round(
-            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
-        print "linear:", '{:f}'.format(clf._timeFitLin), "s", round(
-            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
-        print "overhead:", '{:f}'.format(clf._timeOverhead), "s", round(
-            (clf._timeOverhead / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2), "%"
+        tmp = "gauss: " + '{:f}'.format(clf._timeFitGauss) + "s \t(" + str(round(
+            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        file.write(tmp)
+        tmp = "linear: " + '{:f}'.format(clf._timeFitLin) + "s \t(" + str(round(
+            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        file.write(tmp)
+        tmp = "overhead: " + '{:f}'.format(clf._timeOverhead) + "s \t(" + str(round(
+            (clf._timeOverhead / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        file.write(tmp)
 
 
-def printDataStatistics(_DATA, x, x_test):
-    print "\nData used: ", _DATA
-    printLine(20)
-    print "Size:"
-    print "Total:", x.shape[0] + x_test.shape[0]
-    print "Train:", x.shape[0]
-    print "Test:", x_test.shape[0]
-    print "\n"
+def printDataStatistics(file, _DATA, x, x_test):
+    tmp = "Data used: " + _DATA
+    file.write(tmp)
+    file.write("\n")
+    printLine(file, 20)
+    file.write("Size of data")
+    printLine(file, 20)
+    file.write("\n")
+    tmp = "Total: " + str(x.shape[0] + x_test.shape[0]) + "\n"
+    file.write(tmp)
+    tmp = "Train: " + str(x.shape[0]) + "\n"
+    file.write(tmp)
+    tmp = "Test: " + str(x_test.shape[0]) + "\n"
+    file.write(tmp)
+    file.write("\n")
 
 
 def main(args):
@@ -87,6 +101,14 @@ def main(args):
     _DATA = 0
     _GRIDSEARCH = False
 
+    # Load config file
+    output = open('master/dualsvm_result.txt', 'a')
+    output.write("\n")
+    printLine(output, 20)
+    tmp = "Dual Svm run started on " + str(time.asctime(time.localtime(time.time())))
+    output.write(tmp)
+    printLine(output, 20)
+
     if len(args) == 3:
         if (args[1] in classifiers):
             _CLASSIFIER = args[1]
@@ -94,9 +116,9 @@ def main(args):
             cl = ""
             for classifier in classifiers:
                 cl += classifier + ", "
-            str = "Classifier not recognized. Did you try one of the avaiable classifiers? (" + cl + ")"
+            tmp = "Classifier not recognized. Did you try one of the avaiable classifiers? (" + cl + ")"
             raise (
-                ValueError(str
+                ValueError(tmp
                            ))
         if (args[2] in data):
             _DATA = args[2]
@@ -104,11 +126,13 @@ def main(args):
             da = ""
             for dat in data:
                 da = dat + ", "
-            str = "Data not recognized. Did you try one of the avaiable datasets? (" + da + ")"
-            raise (ValueError(str))
+            tmp = "Data not recognized. Did you try one of the avaiable datasets? (" + da + ")"
+            raise (ValueError(tmp))
 
         x, x_test, y, y_test = dl.load_data(_DATA)
-        printDataStatistics(_DATA, x, x_test)
+        tmp = "\nClassifier used: " + _CLASSIFIER + "\n"
+        output.write(tmp)
+        printDataStatistics(output, _DATA, x, x_test)
 
         clf = getClf(_CLASSIFIER)
 
@@ -121,7 +145,8 @@ def main(args):
             grid.fit(x, y)
 
             C = grid.best_params_['C']
-            print("Linear C:", C)
+            tmp = "Linear C: " + C
+            output.write(tmp)
             # clf.set_params({'C': C})
 
         timeStart = time.time()
@@ -129,16 +154,22 @@ def main(args):
         timeFit = time.time() - timeStart
 
         if (_CLASSIFIER == "dualSvm"):
-            printLine(20)
-            print "Points used for gaussian classifier:", clf._nGauss, " ", round(
-                (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2), "%"
-            print "Points used for linear classifier:", clf._nLin, " ", round(
-                (float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2), "%"
-            print "\n"
+            printLine(output, 20)
+            output.write("Point distribution")
+            printLine(output, 20)
+            output.write("\n")
+            tmp = "Points used for gaussian classifier: " + str(clf._nGauss) + " \t(" + str(round(
+                (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
+            output.write(tmp)
+            tmp = "Points used for linear classifier: " + str(clf._nLin) + " \t(" + str(round(
+                (float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
+            output.write(tmp)
+            output.write("\n")
 
-        printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
+        printTimeStatistics(output, _CLASSIFIER, clf, timeFit, x_test, y_test)
+        output.close()
     else:
-        print(args)
+        output.write(args)
         raise (ValueError("Invalid number of arguments."))
 
 main(sys.argv)

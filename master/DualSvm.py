@@ -2,12 +2,10 @@
 from __future__ import division
 
 import collections
-import math
 import time
 
 import numpy as np
 import sklearn.svm as SVC
-from scipy.sparse import vstack
 from sklearn.grid_search import GridSearchCV
 
 import LinearSvmHelper as ls
@@ -217,42 +215,6 @@ class DualSvm(object):
         if (self._verbose):
             print "Predicting finished."
 
-        '''
-        if (self._verbose):
-            print "Converting dicts to csr matrices."
-        if len(
-                x_gauss) > 0:  # Check if one of the dictionaries is empty. This could be the case if either all or none points fall into the desired range.
-            try:
-                tmp = vstack(list(x_gauss.values()))  # build a csr_matrix out of the values of the dictionaries
-            except ValueError:
-                tmp = np.vstack(list(x_gauss.values()))
-            y_gauss = self._gaussSVC.predict(tmp)
-        else:
-            y_gauss = []
-        if len(x_lin) > 0:
-            try:
-                tmp = vstack(list(x_lin.values()))  # build a csr_matrix out of the values of the dictionaries
-            except ValueError:
-                tmp = np.vstack(list(x_lin.values()))
-            y_lin = self._linSVC.predict(tmp)
-        else:
-            y_lin = []
-        if (self._verbose):
-            print "Converting finished."
-
-        # Use the key values of the starting dictionaries to remember the origin of the prediction. In this section of the code, the old dictionarie's values (the data points) are overwritten with the values of the predictions.
-        if (self._verbose):
-            print "Preparing data before prediction..."
-        i = 0
-        for key, item in x_gauss.items():
-            x_gauss[key] = y_gauss[i]
-            i += 1
-        i = 0
-        for key, item in x_lin.items():
-            x_lin[key] = y_lin[i]
-            i += 1
-        '''
-
         if (self._verbose):
             print "Sorting the predicted values, such that they are in the original order..."
         # Build dictionary of predictions for ordering purposes...
@@ -265,7 +227,6 @@ class DualSvm(object):
             list(predictions.values()))  # extract the values out of the OrderedDict with some casting-magic
         if (self._verbose):
             print "Sorting finished."
-            print "Error:"
         return predictions
 
     def score(self, X, y):
@@ -295,44 +256,58 @@ class DualSvm(object):
 
         return x_inner, y_inner, margins
 
-    def getPointsCloseToHyperplaneByCount(self, X, y, count):
+    def getPointsCloseToHyperplaneByCount(self, X, y, factor):
         """
         @param clf: Linear Classifier to be used.
         @param X: Array of unlabeled datapoints.
-        @param count: Count of points to be taken into consideration
-        @return: Array of points defined by the other parameters
+        @param factor: Factor that determines how close the data should be to the hyperplane.
+        @return: Returns data and labels within and without the calculated regions.
         """
-
-        # prevent invalid user input
-        if count > 1:
-            raise Exception('The count must not be higher than 100%')
-
+        # ToDo: Implement me!
         timeStart = time.time()
-        margins = abs(ls.getMargin(self._linSVC, X))
+        margins = ls.getMargin(self._linSVC, X)
+        indices = np.where(abs(margins) <= factor)
+        x_inner = X[indices]
+        y_inner = y[indices]
+        # Keep track of minimal and maximal margins
+        margins = [-factor, factor]
 
-        # Build Array which associates each point with its margin
-        # This could be done with np.c_ , but with respect to sparce matrices, this command wont work
-        Xy_margins = np.array((X.getrow(0), y[0], margins[0]))
-        sizeX = X.get_shape()[0]
-        for i in range(sizeX - 1):
-            Xy_margins = np.vstack((Xy_margins, (X.getrow(i + 1), y[i + 1], margins[i + 1])))
-        Xy_margins = Xy_margins[Xy_margins[:, 2].argsort()]  # Sort by margins
+        return x_inner, y_inner, margins
 
-        # Build sparse matrix by procentual value
-        nPoints = math.ceil(count * X.get_shape()[0])  #Get the numerical value of points to take
-
-        tmp = Xy_margins[:nPoints, 0]
-        X_inner = vstack(tmp)  # Take the nPoints first Points out of the array (sorted by margin)
-        y_inner = Xy_margins[:nPoints, 1].tolist()  #Take the nPoints first labels out of the array
-
-        max_Margin = Xy_margins[nPoints, 2]
-        margins = [-max_Margin, max_Margin]
-
-        return X_inner, y_inner, margins
-
-    def get_params(self):
-        # TODO implement me
-        return -1
+    # def getPointsCloseToHyperplaneByCount(self, X, y, count):
+    #     """
+    #     @param clf: Linear Classifier to be used.
+    #     @param X: Array of unlabeled datapoints.
+    #     @param count: Count of points to be taken into consideration
+    #     @return: Array of points defined by the other parameters
+    #     """
+    #
+    #     # prevent invalid user input
+    #     if count > 1:
+    #         raise Exception('The count must not be higher than 100%')
+    #
+    #     timeStart = time.time()
+    #     margins = abs(ls.getMargin(self._linSVC, X))
+    #
+    #     # Build Array which associates each point with its margin
+    #     # This could be done with np.c_ , but with respect to sparse matrices, this command wont work
+    #     Xy_margins = np.array((X.getrow(0), y[0], margins[0]))
+    #     sizeX = X.get_shape()[0]
+    #     for i in range(sizeX - 1):
+    #         Xy_margins = np.vstack((Xy_margins, (X.getrow(i + 1), y[i + 1], margins[i + 1])))
+    #     Xy_margins = Xy_margins[Xy_margins[:, 2].argsort()]  # Sort by margins
+    #
+    #     # Build sparse matrix by procentual value
+    #     nPoints = math.ceil(count * X.get_shape()[0])  #Get the numerical value of points to take
+    #
+    #     tmp = Xy_margins[:nPoints, 0]
+    #     X_inner = vstack(tmp)  # Take the nPoints first Points out of the array (sorted by margin)
+    #     y_inner = Xy_margins[:nPoints, 1].tolist()  #Take the nPoints first labels out of the array
+    #
+    #     max_Margin = Xy_margins[nPoints, 2]
+    #     margins = [-max_Margin, max_Margin]
+    #
+    #     return X_inner, y_inner, margins
 
     def getMargin(self, x):
         return ls.getMargin(self._linSVC, x)
