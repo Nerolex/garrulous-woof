@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import time
 
 import sklearn.svm as SVC
@@ -97,6 +96,7 @@ def main(args):
     '''
     classifiers = ["gauss", "linear", "dualSvm"]
     data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
+    booleans = ["True", "False", "true", "false"]
     _CLASSIFIER = 0
     _DATA = 0
     _GRIDSEARCH = False
@@ -109,7 +109,7 @@ def main(args):
     output.write(tmp)
     printLine(output, 20)
 
-    if len(args) == 3:
+    if len(args) >= 3:
         if (args[1] in classifiers):
             _CLASSIFIER = args[1]
         else:
@@ -136,6 +136,10 @@ def main(args):
 
         clf = getClf(_CLASSIFIER)
 
+        if len(args) == 4 and args[3] in booleans and _CLASSIFIER == "dualSvm":
+            clf._useFactor = args[3] == "True" or "true"
+
+
         if (_CLASSIFIER == "linear" and _GRIDSEARCH == True):
             # LinSvm gridSearch
             param_grid = [
@@ -158,6 +162,14 @@ def main(args):
             output.write("Point distribution")
             printLine(output, 20)
             output.write("\n")
+            tmp = ""
+            if clf._useFactor:
+                tmp = "Decision by factor: " + str(clf._factor) + "\n"
+            else:
+                tmp = "Decision by count: " + str(clf._count) + "\n"
+            tmp += "Boundary at: [" + str(clf._margins[0]) + "," + str(clf._margins[1]) + "]\n"
+            output.write(tmp)
+
             tmp = "Points used for gaussian classifier: " + str(clf._nGauss) + " \t(" + str(round(
                 (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
             output.write(tmp)
@@ -166,10 +178,25 @@ def main(args):
             output.write(tmp)
             output.write("\n")
 
+            printLine(output, 20)
+            output.write("Params used")
+            printLine(output, 20)
+            output.write("\n")
+            tmp = "Linear: C: " + str(clf._linSVC.C) + "\n"
+            output.write(tmp)
+            tmp = "Gaussian: C: " + str(clf._gaussSVC.C) + " gamma: " + str(clf._gaussSVC.gamma) + "\n"
+            output.write(tmp)
+
         printTimeStatistics(output, _CLASSIFIER, clf, timeFit, x_test, y_test)
         output.close()
     else:
         output.write(args)
         raise (ValueError("Invalid number of arguments."))
 
-main(sys.argv)
+
+# main(sys.argv)
+main(['', 'linear', 'ijcnn'])
+main(['', 'dualSvm', 'ijcnn', 'False'])
+main(['', 'linear', 'covtype'])
+main(['', 'dualSvm', 'covtype', 'False'])
+print("Done!")

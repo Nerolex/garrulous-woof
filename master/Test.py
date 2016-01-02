@@ -41,7 +41,7 @@ def printLine(size):
 def getClf(clfType):
     if clfType == "dualSvm":
         useFactor = False
-        factor = 0.8
+        factor = 0.7
         count = 0.1
         cLin = 10
         cGauss = 1
@@ -56,8 +56,8 @@ def getClf(clfType):
 
 
 def run_test():
-    _CLASSIFIER = "linear"
-    _DATA = "ijcnn"
+    _CLASSIFIER = "dualSvm"
+    _DATA = "sinus"
 
     x, x_test, y, y_test = dl.load_data(_DATA)
     printDataStatistics(_DATA, x, x_test)
@@ -75,8 +75,10 @@ def run_test():
         print("Points used for linear classifier:", clf._nLin)
         print("\n")
 
+
     printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test)
 
+    plot_sinus(x, y, clf, clf._factor)
 
 def printTimeStatistics(_CLASSIFIER, clf, timeFit, x_test, y_test):
     print("Time taken:")
@@ -97,3 +99,6 @@ def printDataStatistics(_DATA, x, x_test):
     print("Train:\t", x.shape[0])
     print("Test:\t", x_test.shape[0])
     print("\n")
+
+
+run_test()
