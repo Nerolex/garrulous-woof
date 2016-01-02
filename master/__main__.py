@@ -166,6 +166,15 @@ def main(args):
             output.write(tmp)
             output.write("\n")
 
+            printLine(output, 20)
+            output.write("Params used")
+            printLine(output, 20)
+            output.write("\n")
+            tmp = "Linear: C: " + str(clf._linSVC.C) + "\n"
+            output.write(tmp)
+            tmp = "Gaussian: C: " + str(clf._gaussSVC.C) + " gamma: " + str(clf._gaussSVC.gamma) + "\n"
+            output.write(tmp)
+
         printTimeStatistics(output, _CLASSIFIER, clf, timeFit, x_test, y_test)
         output.close()
     else:

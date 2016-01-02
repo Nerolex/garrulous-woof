@@ -142,8 +142,7 @@ class DualSvm(object):
         self._timeFitLin = time.time() - timeStartLin
         if (self._verbose):
             print("\t Completed fitting process for linear SVC.")
-        # Measure the number of points for linear classifier:
-        self._nLin = X.shape[0]
+
 
         if (self._verbose):
             print(" \t Sorting points for classifiers.")
@@ -156,13 +155,15 @@ class DualSvm(object):
             print "\t Sorting points took ", round(((time.time() - timeStart) * 1000), 2), "s"
             self._margins = margins
         else:
-            # TODO: this method needs changing and should not be used.
-            x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
+            x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._factor)
             self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
             self._margins = margins
         self._timeOverhead = time.time() - timeStartOverhead
         if (self._verbose):
             print("\t Sorting finished.")
+
+        # Measure the number of points for linear classifier:
+        self._nLin = X.shape[0] - self._nGauss
 
         # If set to True, this will search for the best C with gridsearch:
         if (self._searchGauss):
@@ -250,7 +251,7 @@ class DualSvm(object):
         """
 
         timeStart = time.time()
-        margins = ls.getMargin(self._linSVC, X)
+        margins = ls.getMargin(self._linSVC, X)  # margins = list of all points with margins
         indices = np.where(abs(margins) <= factor)
         x_inner = X[indices]
         y_inner = y[indices]
@@ -266,51 +267,17 @@ class DualSvm(object):
         @param factor: Factor that determines how close the data should be to the hyperplane.
         @return: Returns data and labels within and without the calculated regions.
         """
-        # ToDo: Implement me!
         timeStart = time.time()
         margins = ls.getMargin(self._linSVC, X)
-        indices = np.where(abs(margins) <= factor)
+        # Calculate the actual number of points to be taken into account
+        n = factor * X.shape[0]
+        indices = np.argpartition(margins, n)[:n]  # get the indices of the n smallest elements
         x_inner = X[indices]
         y_inner = y[indices]
         # Keep track of minimal and maximal margins
         margins = [-factor, factor]
 
         return x_inner, y_inner, margins
-
-    # def getPointsCloseToHyperplaneByCount(self, X, y, count):
-    #     """
-    #     @param clf: Linear Classifier to be used.
-    #     @param X: Array of unlabeled datapoints.
-    #     @param count: Count of points to be taken into consideration
-    #     @return: Array of points defined by the other parameters
-    #     """
-    #
-    #     # prevent invalid user input
-    #     if count > 1:
-    #         raise Exception('The count must not be higher than 100%')
-    #
-    #     timeStart = time.time()
-    #     margins = abs(ls.getMargin(self._linSVC, X))
-    #
-    #     # Build Array which associates each point with its margin
-    #     # This could be done with np.c_ , but with respect to sparse matrices, this command wont work
-    #     Xy_margins = np.array((X.getrow(0), y[0], margins[0]))
-    #     sizeX = X.get_shape()[0]
-    #     for i in range(sizeX - 1):
-    #         Xy_margins = np.vstack((Xy_margins, (X.getrow(i + 1), y[i + 1], margins[i + 1])))
-    #     Xy_margins = Xy_margins[Xy_margins[:, 2].argsort()]  # Sort by margins
-    #
-    #     # Build sparse matrix by procentual value
-    #     nPoints = math.ceil(count * X.get_shape()[0])  #Get the numerical value of points to take
-    #
-    #     tmp = Xy_margins[:nPoints, 0]
-    #     X_inner = vstack(tmp)  # Take the nPoints first Points out of the array (sorted by margin)
-    #     y_inner = Xy_margins[:nPoints, 1].tolist()  #Take the nPoints first labels out of the array
-    #
-    #     max_Margin = Xy_margins[nPoints, 2]
-    #     margins = [-max_Margin, max_Margin]
-    #
-    #     return X_inner, y_inner, margins
 
     def getMargin(self, x):
         return ls.getMargin(self._linSVC, x)
@@ -323,10 +290,10 @@ class DualSvm(object):
         grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid)
         grid.fit(X, y)
 
-        C = grid.best_params_['C']
-        print("Linear C:", C)
+        _C = grid.best_params_['C']
+        self._linSVC.set_params(C=_C)
 
-        return C
+        return _C
 
     def gridsearchForGauss(self, X, y):
         param_grid = [
@@ -336,9 +303,8 @@ class DualSvm(object):
         grid = GridSearchCV(SVC.SVC(), param_grid=param_grid)
         grid.fit(X, y)
 
-        C = grid.best_params_['C']
-        gamma = grid.best_params_['gamma']
+        _C = grid.best_params_['C']
+        _gamma = grid.best_params_['gamma']
 
-        print("Gauss C: ", C, "Gauss gamma: ", gamma)
-
-        return C, gamma
+        self._gaussSVC.set_params(C=_C, gamma=_gamma)
+        return _C, _gamma
