@@ -50,24 +50,39 @@ def getClf(clfType):
 
 
 def printTimeStatistics(file, _CLASSIFIER, clf, timeFit, x_test, y_test):
+    _timeFit = timeFit  # HH:MM
+    _timeFitLin = clf._timeFitLin  # SS_MSMS
+    _timeFitGauss = clf._timeFitGauss  # MM:SS
+    _timeFitOver = clf._timeOverhead  # MSMS
+    _timeTotal = _timeFitLin + _timeFitGauss + _timeFitOver
+
+    _score = clf.score(x_test, y_test)
+    _error = round((1 - _score) * 100, 2)
+
+    _percentGaussTotal = round((_timeFitGauss / _timeTotal) * 100, 2)
+    _percentLinTotal = round((_timeFitLin / _timeTotal * 100), 2)
+    _percentOverTotal = round((_timeFitOver / _timeTotal * 100), 2)
+
+    # Bring Time data in readable format
+    _timeFit = secondsToHourMin(_timeFit)
+    _timeFitLin = secondsToSecMilsec(_timeFitLin)
+    _timeFitGauss = secondsToMinSec(_timeFitGauss)
+    _timeFitOver = secondsToMilsec(_timeFitOver)
+    
     file.write("\n")
     printLine(file, 20)
     file.write("Time and Error Statistics")
     printLine(file, 20)
-    tmp = "\nTime to Fit: " + '{:f}'.format(timeFit) + "s\n"
+    tmp = "\nTime to Fit: " + _timeFit + "\n"
     file.write(tmp)
-    error = 1 - clf.score(x_test, y_test)
-    tmp = "Error: " + str(error) + "\n"
+    tmp = "Error: " + str(_error) + "\n"
     file.write(tmp)
     if _CLASSIFIER == "dualSvm":
-        tmp = "gauss: " + '{:f}'.format(clf._timeFitGauss) + "s \t(" + str(round(
-            (clf._timeFitGauss / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        tmp = "gauss: " + _timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)\n"
         file.write(tmp)
-        tmp = "linear: " + '{:f}'.format(clf._timeFitLin) + "s \t(" + str(round(
-            (clf._timeFitLin / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        tmp = "linear: " + _timeFitLin + "\t(" + str(_percentLinTotal) + "%)\n"
         file.write(tmp)
-        tmp = "overhead: " + '{:f}'.format(clf._timeOverhead) + "s \t(" + str(round(
-            (clf._timeOverhead / (clf._timeFitLin + clf._timeFitGauss + clf._timeOverhead) * 100), 2)) + "%)\n"
+        tmp = "overhead: " + _timeFitOver + "\t(" + str(_percentOverTotal) + "%)\n"
         file.write(tmp)
 
 
@@ -88,31 +103,133 @@ def printDataStatistics(file, _DATA, x, x_test):
     file.write("\n")
 
 
-def main(args):
-    '''
-    Usage: e.g. master linear iris
-    @param args:
-    @return:
-    '''
-    classifiers = ["gauss", "linear", "dualSvm"]
-    data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
-    booleans = ["True", "False", "true", "false"]
-    _CLASSIFIER = 0
-    _DATA = 0
-    _GRIDSEARCH = False
+def printMiscStatsDualSvm(clf, output):
+    printLine(output, 20)
+    output.write("Point distribution")
+    printLine(output, 20)
+    output.write("\n")
+    tmp = ""
+    if clf._useFactor:
+        tmp = "Decision by factor: " + str(clf._factor) + "\n"
+    else:
+        tmp = "Decision by count: " + str(clf._count) + "\n"
+    tmp += "Boundary at: [" + str(round(clf._margins[0], 3)) + "," + str(round(clf._margins[1], 3)) + "]\n"
+    output.write(tmp)
+    tmp = "Points used for gaussian classifier: " + str(clf._nGauss) + " \t(" + str(round(
+            (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
+    output.write(tmp)
+    tmp = "Points used for linear classifier: " + str(clf._nLin) + " \t(" + str(round(
+            (float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
+    output.write(tmp)
+    output.write("\n")
+    printLine(output, 20)
+    output.write("Params used")
+    printLine(output, 20)
+    output.write("\n")
 
-    # Load config file
-    output = open('master/dualsvm_result.txt', 'a')
+    tmp = "Linear: C: " + toPowerOfTen(clf._linSVC.C) + "\n"
+    output.write(tmp)
+    tmp = "Gaussian: C: " + toPowerOfTen(clf._gaussSVC.C) + "; gamma: " + toPowerOfTen(clf._gaussSVC.gamma) + "\n"
+    output.write(tmp)
+
+
+def printGridsearchStatisticsDualSvm(clf, output):
+    printLine(output, 20)
+    output.write("Gridsearch")
+    printLine(output, 20)
+    output.write("\n")
+    tmp = "Gridsearch for linear?: " + clf._searchLin + "\n"
+    output.write(tmp)
+    tmp = "Gridsearch for gauss?: " + clf._searchGauss + "\n\n"
+    output.write(tmp)
+
+
+def printHeader(output):
     output.write("\n")
     printLine(output, 20)
     tmp = "Dual Svm run started on " + str(time.asctime(time.localtime(time.time())))
     output.write(tmp)
     printLine(output, 20)
 
+
+def toPowerOfTen(k):
+    return ("%.E" % k)
+
+
+def secondsToHourMin(s):
+    '''
+    @param s:
+    @return:
+    s -> HH:MM
+    '''
+    _m, _s = divmod(s, 60)
+    _h, _m = divmod(_m, 60)
+    result = "%dh %02dm" % (_h, _m)
+    return result
+
+
+def secondsToMinSec(s):
+    '''
+    @param s:
+    @return:
+    s->MM:SS
+    '''
+    _m, _s = divmod(s, 60)
+    _s = round(_s, 0)
+    result = "%dm %02ds" % (_m, _s)
+    return result
+
+
+def secondsToSecMilsec(s):
+    '''
+    @param s:
+    @return:
+    s-> SS:MSMS
+    '''
+    _s = s
+    _ms = round(s % 1, 3) * 1000
+    result = "%ds %03dms" % (_s, _ms)
+    return result
+
+
+def secondsToMilsec(s):
+    '''
+    @param s:
+    @return:
+    s-> MSMS
+    '''
+    _s = s
+    _ms = round(s, 3) * 1000
+    result = "%02dms" % (_ms)
+    return result
+
+
+def main(args):
+    '''
+    Usage: e.g. master linear iris
+    @param args:
+    @return:
+    '''
+
+    #Define valid arguments for console input
+    classifiers = ["gauss", "linear", "dualSvm"]
+    data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
+    booleans = ["True", "False", "true", "false"]
+
+    #Initial assignments
+    _CLASSIFIER = 0
+    _DATA = 0
+    _GRIDSEARCH = False
+
+    #Output
+    output = open('master/dualsvm_result.txt', 'a')
+    printHeader(output)
+
+    #Do the following only if enough arguments are given
     if len(args) >= 3:
-        if (args[1] in classifiers):
+        if (args[1] in classifiers):  #Set the classifier
             _CLASSIFIER = args[1]
-        else:
+        else:  #Clf was not found
             cl = ""
             for classifier in classifiers:
                 cl += classifier + ", "
@@ -120,72 +237,50 @@ def main(args):
             raise (
                 ValueError(tmp
                            ))
-        if (args[2] in data):
+        if (args[2] in data):  #Set the data
             _DATA = args[2]
-        else:
+        else:  #data mpt found
             da = ""
             for dat in data:
                 da = dat + ", "
             tmp = "Data not recognized. Did you try one of the avaiable datasets? (" + da + ")"
             raise (ValueError(tmp))
 
+        #Load the data
         x, x_test, y, y_test = dl.load_data(_DATA)
         tmp = "\nClassifier used: " + _CLASSIFIER + "\n"
         output.write(tmp)
         printDataStatistics(output, _DATA, x, x_test)
 
+        #Load the classifier
         clf = getClf(_CLASSIFIER)
 
+        #Only for dual svm
         if len(args) == 4 and args[3] in booleans and _CLASSIFIER == "dualSvm":
             clf._useFactor = args[3] == "True" or "true"
+            printGridsearchStatisticsDualSvm(clf, output)
 
-
+        #Only for linear svm
         if (_CLASSIFIER == "linear" and _GRIDSEARCH == True):
-            # LinSvm gridSearch
-            param_grid = [
-                {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
-            # cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-            grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid)
-            grid.fit(x, y)
-
-            C = grid.best_params_['C']
-            tmp = "Linear C: " + C
+            if _GRIDSEARCH == True:
+                # LinSvm gridSearch
+                param_grid = [
+                    {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}]
+                grid = GridSearchCV(SVC.LinearSVC(), param_grid=param_grid)
+                grid.fit(x, y)
+                _C = grid.best_params_['C']
+                clf.set_params(C=_C)
+            tmp = "Linear C: " + _C
             output.write(tmp)
-            # clf.set_params({'C': C})
 
+        # Fit the classifier on the given data and measure the time taken.
+        #Notice that the result can be distored by the gridsearch for the dual svm.
         timeStart = time.time()
         clf.fit(x, y)
         timeFit = time.time() - timeStart
 
         if (_CLASSIFIER == "dualSvm"):
-            printLine(output, 20)
-            output.write("Point distribution")
-            printLine(output, 20)
-            output.write("\n")
-            tmp = ""
-            if clf._useFactor:
-                tmp = "Decision by factor: " + str(clf._factor) + "\n"
-            else:
-                tmp = "Decision by count: " + str(clf._count) + "\n"
-            tmp += "Boundary at: [" + str(clf._margins[0]) + "," + str(clf._margins[1]) + "]\n"
-            output.write(tmp)
-
-            tmp = "Points used for gaussian classifier: " + str(clf._nGauss) + " \t(" + str(round(
-                (float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
-            output.write(tmp)
-            tmp = "Points used for linear classifier: " + str(clf._nLin) + " \t(" + str(round(
-                (float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%)" + "\n"
-            output.write(tmp)
-            output.write("\n")
-
-            printLine(output, 20)
-            output.write("Params used")
-            printLine(output, 20)
-            output.write("\n")
-            tmp = "Linear: C: " + str(clf._linSVC.C) + "\n"
-            output.write(tmp)
-            tmp = "Gaussian: C: " + str(clf._gaussSVC.C) + " gamma: " + str(clf._gaussSVC.gamma) + "\n"
-            output.write(tmp)
+            printMiscStatsDualSvm(clf, output)
 
         printTimeStatistics(output, _CLASSIFIER, clf, timeFit, x_test, y_test)
         output.close()
@@ -194,9 +289,9 @@ def main(args):
         raise (ValueError("Invalid number of arguments."))
 
 
+
+
+
 # main(sys.argv)
-main(['', 'linear', 'ijcnn'])
-main(['', 'dualSvm', 'ijcnn', 'False'])
-main(['', 'linear', 'covtype'])
-main(['', 'dualSvm', 'covtype', 'False'])
+main(['', 'dualSvm', 'ijcnn'])
 print("Done!")
