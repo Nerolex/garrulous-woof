@@ -213,7 +213,7 @@ def main(args):
 
     #Define valid arguments for console input
     classifiers = ["gauss", "linear", "dualSvm"]
-    data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
+    data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn", "skin"]
 
     #Initial assignments
     _CLASSIFIER = 0
