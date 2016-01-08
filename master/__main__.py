@@ -285,7 +285,9 @@ def main(args):
 
 
 # main(sys.argv)
-main(['', 'dualSvm', 'ijcnn'])
+main(['', 'dualSvm', 'ijcnn', 0.2])
+main(['', 'dualSvm', 'ijcnn', 0.4])
+main(['', 'dualSvm', 'ijcnn', 0.6])
 
 main(['', 'dualSvm', 'skin', 0.2])
 main(['', 'dualSvm', 'skin', 0.4])
@@ -294,4 +296,5 @@ main(['', 'dualSvm', 'skin', 0.6])
 main(['', 'dualSvm', 'cod-rna', 0.2])
 main(['', 'dualSvm', 'cod-rna', 0.4])
 main(['', 'dualSvm', 'cod-rna', 0.6])
+
 print("Done!")
