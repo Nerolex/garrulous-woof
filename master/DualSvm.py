@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-import collections
 import time
 
 import numpy as np
 import sklearn.svm as SVC
 from sklearn.grid_search import GridSearchCV
-
-import LinearSvmHelper as ls
 
 """
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
@@ -18,7 +15,7 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 # ToDo: Gridsearch - Write to output file
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, useFactor=True, factor=0, count=0, searchGauss=False, searchLin=False,
+    def __init__(self, cLin, cGauss, gamma, useFactor=False, factor=0, count=0, searchGauss=False, searchLin=False,
                  verbose=False):
         """
 
@@ -51,43 +48,54 @@ class DualSvm(object):
         self._linSVC = SVC.LinearSVC(C=self._cLin)
         self._gaussSVC = SVC.SVC(C=self._cGauss, kernel="rbf", gamma=self._gamma)
 
-
+    # region Getters and Setters
     @property
     def useFactor(self):
         return self._useFactor
+
     @useFactor.setter
     def useFactor(self, value):
         self._useFactor = value
+
     @property
     def cLin(self):
         return self._cLin
+
     @cLin.setter
     def cLin(self, value):
         self._cLin = value
         self._linSVC(C=value)
+
     @property
     def cGauss(self):
         return self._cGauss
+
     @cGauss.setter
     def cGauss(self, value):
         self._cGauss = value
         self._gaussSVC(C=value)
+
     @property
     def gamma(self):
         return self._gamma
+
     @gamma.setter
     def gamma(self, value):
         self._gamma = value
         self._gaussSVC(gamma=value)
+
     @property
     def factor(self):
         return self._factor
+
     @factor.setter
     def factor(self, value):
         self._factor = value
+
     @property
     def count(self):
         return self._count
+
     @count.setter
     def count(self, value):
         self._count = value
@@ -108,13 +116,8 @@ class DualSvm(object):
     def nLin(self, value):
         self._nLin = value
 
-    def printTableFormatted(self, title, args):
-        print("\t\t\t" + title + "\t\t\t")
-        for arg in args:
-            line = ""
-            for arg2 in arg:
-                line = line + (arg2 + "\t")
-            print(line)
+    #endregion
+
     def fit(self, X, y):
         """
         Fits a linear SVC on the given data.
@@ -142,7 +145,6 @@ class DualSvm(object):
         self._timeFitLin = time.time() - timeStartLin
         if (self._verbose):
             print("\t Completed fitting process for linear SVC.")
-
 
         if (self._verbose):
             print(" \t Sorting points for classifiers.")
@@ -181,7 +183,6 @@ class DualSvm(object):
         if (self._verbose):
             print("\nFinished fitting process.\n")
 
-
     def predict(self, X):
         """
 
@@ -189,9 +190,7 @@ class DualSvm(object):
         @return:
         """
 
-        # Prepare dictionaries for the data
-        x_lin = {}
-        x_gauss = {}
+        predictions = []
 
         if (self._verbose):
             print "Starting prediction process."
@@ -206,31 +205,17 @@ class DualSvm(object):
                     print int(curPos), "%"
 
             # Determine where to put the current point
-            margin = ls.getMargin(self._linSVC, x)
+            margin = self._linSVC.decision_function(x)
 
             if self._margins[0] <= margin <= self._margins[1]:
-                tmp = {i: self._gaussSVC.predict(x)}
-                x_gauss.update(tmp)
+                predictions.append(self._gaussSVC.predict(x))
             else:
-                tmp = {i: self._linSVC.predict(x)}
-                x_lin.update(tmp)
+                predictions.append(self._linSVC.predict(x))
             i += 1
 
         if (self._verbose):
             print "Predicting finished."
 
-        if (self._verbose):
-            print "Sorting the predicted values, such that they are in the original order..."
-        # Build dictionary of predictions for ordering purposes...
-        predictions = {}
-        x_gauss.update(x_lin)
-        predictions.update(x_gauss)  # ..and start with concatenating the generated dictionaries
-        predictions = collections.OrderedDict(
-            sorted(predictions.items()))  # ..then start sorting the dictionary by its values, to get the original order
-        predictions = np.array(
-            list(predictions.values()))  # extract the values out of the OrderedDict with some casting-magic
-        if (self._verbose):
-            print "Sorting finished."
         return predictions
 
     def score(self, X, y):
@@ -251,7 +236,8 @@ class DualSvm(object):
         """
 
         timeStart = time.time()
-        margins = abs(ls.getMargin(self._linSVC, X))  # margins = list of all points with margins
+        margins = abs(self._linSVC.decision_function(X))
+
         indices = np.where(margins <= factor)
         try:
             x_inner = X[indices]
@@ -272,7 +258,8 @@ class DualSvm(object):
         @return: Returns data and labels within and without the calculated regions.
         """
         timeStart = time.time()
-        margins = abs(ls.getMargin(self._linSVC, X))
+        margins = abs(self._linSVC.decision_function(X))
+
         # Calculate the actual number of points to be taken into account
         n = count * X.shape[0]
         indices = np.argpartition(margins, n)[:n]  # get the indices of the n smallest elements
@@ -283,9 +270,6 @@ class DualSvm(object):
         margins = [-maxMargin, maxMargin]
 
         return x_inner, y_inner, margins
-
-    def getMargin(self, x):
-        return ls.getMargin(self._linSVC, x)
 
     def gridsearchForLinear(self, X, y):
         # LinSvm gridSearch
@@ -304,6 +288,9 @@ class DualSvm(object):
         param_grid = [
             {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [10, 1, 0.1, 0.01, 0.001, 0.0001],
              'kernel': ['rbf']}, ]
+        # param_grid = [
+        #    {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [0.001],
+        #     'kernel': ['rbf']}, ]
         # cv = StratifiedShuffleSplit(y, n_iter=3, test_size=0.2, random_state=42)
         grid = GridSearchCV(SVC.SVC(), param_grid=param_grid)
         grid.fit(X, y)

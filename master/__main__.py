@@ -214,7 +214,6 @@ def main(args):
     #Define valid arguments for console input
     classifiers = ["gauss", "linear", "dualSvm"]
     data = ["sinus", "iris", "cod-rna", "covtype", "a1a", "w8a", "banana", "ijcnn"]
-    booleans = ["True", "False", "true", "false"]
 
     #Initial assignments
     _CLASSIFIER = 0
@@ -256,9 +255,8 @@ def main(args):
         clf = getClf(_CLASSIFIER)
 
         #Only for dual svm
-        if len(args) == 4 and args[3] in booleans and _CLASSIFIER == "dualSvm":
-            clf._useFactor = args[3] == "True" or "true"
-            printGridsearchStatisticsDualSvm(clf, output)
+        if len(args) == 4 and type(args[3]) == float and _CLASSIFIER == "dualSvm":
+            clf._count = args[3]
 
         #Only for linear svm
         if (_CLASSIFIER == "linear" and _GRIDSEARCH == True):
@@ -294,4 +292,12 @@ def main(args):
 
 # main(sys.argv)
 main(['', 'dualSvm', 'ijcnn'])
+
+main(['', 'dualSvm', 'skin', 0.2])
+main(['', 'dualSvm', 'skin', 0.4])
+main(['', 'dualSvm', 'skin', 0.6])
+
+main(['', 'dualSvm', 'cod-rna', 0.2])
+main(['', 'dualSvm', 'cod-rna', 0.4])
+main(['', 'dualSvm', 'cod-rna', 0.6])
 print("Done!")
