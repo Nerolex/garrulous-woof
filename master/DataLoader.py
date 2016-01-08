@@ -65,7 +65,7 @@ def load_covtype():
 
 def load_skin():
     data, target = da.load_svmlight_file("data/skin-nonskin/skin_nonskin.txt", 3)
-    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=1 / 3)
+    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.3)
     return x, x_test, y, y_test
 
 def load_libsvm_file(filename):

@@ -22,12 +22,6 @@ def getClf(clfType):
         config = open('master/dualsvm.conf', 'r')
         for line in config:
             split_line = line.split(":")
-            if (split_line[0] == "useFactor"):
-                useFactor = split_line[1].strip("\n") == "True"
-            if (split_line[0] == "factor"):
-                factor = float(split_line[1].strip("\n"))
-            if (split_line[0] == "count"):
-                count = float(split_line[1].strip("\n"))
             if (split_line[0] == "cLin"):
                 cLin = float(split_line[1].strip("\n"))
             if (split_line[0] == "cGauss"):
@@ -42,7 +36,7 @@ def getClf(clfType):
                 verbose = split_line[1].strip("\n") == "True"
         config.close()
 
-        return ds.DualSvm(cLin, cGauss, gamma, useFactor, factor, count, searchGauss, searchLin, verbose)
+        return ds.DualSvm(cLin, cGauss, gamma, False, 0.0, 0.0, searchGauss, searchLin, verbose)
     elif clfType == "linear":
         return SVC.LinearSVC(C=0.0001)
     elif clfType == "gauss":
@@ -75,7 +69,7 @@ def printTimeStatistics(file, _CLASSIFIER, clf, timeFit, x_test, y_test):
     printLine(file, 20)
     tmp = "\nTime to Fit: " + _timeFit + "\n"
     file.write(tmp)
-    tmp = "Error: " + str(_error) + "\n"
+    tmp = "Error: " + str(_error) + "%\n"
     file.write(tmp)
     if _CLASSIFIER == "dualSvm":
         tmp = "gauss: " + _timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)\n"
@@ -291,7 +285,7 @@ def main(args):
 
 
 # main(sys.argv)
-main(['', 'dualSvm', 'ijcnn'])
+# main(['', 'dualSvm', 'ijcnn'])
 
 main(['', 'dualSvm', 'skin', 0.2])
 main(['', 'dualSvm', 'skin', 0.4])
