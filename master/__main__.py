@@ -158,7 +158,7 @@ def secondsToHourMin(s):
     '''
     _m, _s = divmod(s, 60)
     _h, _m = divmod(_m, 60)
-    result = "%dh %02dm" % (_h, _m)
+    result = "%dh %02dm %02s" % (_h, _m, _s)
     return result
 
 
@@ -285,11 +285,13 @@ def main(args):
 
 
 # main(sys.argv)
+'''
 main(['', 'dualSvm', 'ijcnn', 0.2])
 main(['', 'dualSvm', 'ijcnn', 0.4])
 main(['', 'dualSvm', 'ijcnn', 0.6])
 
 main(['', 'dualSvm', 'skin', 0.2])
+'''
 main(['', 'dualSvm', 'skin', 0.4])
 main(['', 'dualSvm', 'skin', 0.6])
 
