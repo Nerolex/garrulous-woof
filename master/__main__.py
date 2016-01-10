@@ -285,8 +285,9 @@ def main(args):
 
 
 # main(sys.argv)
-'''
+
 main(['', 'dualSvm', 'ijcnn', 0.2])
+'''
 main(['', 'dualSvm', 'ijcnn', 0.4])
 main(['', 'dualSvm', 'ijcnn', 0.6])
 
