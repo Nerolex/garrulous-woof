@@ -193,12 +193,9 @@ def run(x, x_test, y, y_test, count, raw_output):
 def run_batch(data):
     # Output
     date = str(time.asctime(time.localtime(time.time())))
-    print(time.asctime(time.localtime(time.time())))
-    print(time.asctime(time.gmtime(time.time())))
     header = data + " " + date
     header = header.replace(" ", "_")
     file = 'master/output/' + header + ".csv"
-    print(file)
     output = open(file, 'a')
     printHeader(output)
 
