@@ -198,6 +198,7 @@ def run_batch(data):
     header = data + " " + date
     header = header.replace(" ", "_")
     file = 'master/output/' + header + ".csv"
+    print(file)
     output = open(file, 'a')
     printHeader(output)
 
