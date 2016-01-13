@@ -196,8 +196,9 @@ def run_batch(data):
     # Output
     date = str(time.asctime(time.localtime(time.time())))
     header = data + " " + date
-    header = header.replace(" ", "_").replace(":", "_")
-    header = "WURSTSCHMECKT"
+    print(str(header))
+    header = header.replace(" ", "_")
+    header = header.replace(":", "_")
     file = 'master/output/' + header + ".csv"
     output = open(file, 'a')
     printHeader(output)
