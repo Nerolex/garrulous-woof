@@ -190,32 +190,19 @@ class DualSvm(object):
         @return:
         """
 
-        predictions = []
+        timeStart = time.time()
+        fx = self._linSVC.decision_function(X)
+        gaussIndices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
+        linIndices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
 
-        if (self._verbose):
-            print "Starting prediction process."
+        linPreds = self._linSVC.predict(X[linIndices])
+        gaussPreds = self._gaussSVC.predict(X[gaussIndices])
 
-        i = 0  # Keep track of current position in Vector X
-        lastVal = -1
-        for x in X:
-            if (self._verbose):
-                curPos = round((i / X.shape[0]) * 100, 2)
-                if (curPos * 1000 % 1000 == 0) and lastVal != curPos:
-                    lastVal = curPos
-                    print int(curPos), "%"
+        predictions = np.zeros(len(linPreds) + len(gaussPreds))
+        predictions[linIndices] = linPreds
+        predictions[gaussIndices] = gaussPreds
 
-            # Determine where to put the current point
-            margin = self._linSVC.decision_function(x)
-
-            if self._margins[0] <= margin <= self._margins[1]:
-                predictions.append(self._gaussSVC.predict(x))
-            else:
-                predictions.append(self._linSVC.predict(x))
-            i += 1
-
-        if (self._verbose):
-            print "Predicting finished."
-
+        self._timePredict = time.time() - timeStart
         return predictions
 
     def score(self, X, y):
@@ -286,7 +273,7 @@ class DualSvm(object):
 
     def gridsearchForGauss(self, X, y):
         param_grid = [
-            {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [10, 1, 0.1, 0.01, 0.001, 0.0001],
+            {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'gamma': [1000, 100, 10, 1, 0.1, 0.01, 0.001, 0.0001],
              'kernel': ['rbf']}, ]
         # param_grid = [
         #    {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100], 'gamma': [0.001],

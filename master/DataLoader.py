@@ -47,25 +47,14 @@ def load_sinus():
 
 
 def load_covtype():
-    # SAMPLESIZE = 0.4
-
     x, y = da.load_svmlight_file("data/covtype/covtype.sample04_train", 54)
     x_test, y_test = da.load_svmlight_file("data/covtype/covtype.sample04_test", 54)
-
-    # data, target = da.load_svmlight_file("data/covtype/covtype.sample04", 54)
-    # x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.3)
-    # da.dump_svmlight_file(x, y, "data/covtype/covtype.sample04_train")
-    # da.dump_svmlight_file(x_test, y_test, "data/covtype/covtype.sample04_test")
-    # target = np.where(target == 1, -1, 1)
-    # X, NONE, Y, NONE = cv.train_test_split(data, target, train_size=SAMPLESIZE)
-    # x, x_test, y, y_test = cv.train_test_split(X, Y, train_size=0.3)
-    #da.dump_svmlight_file(X, Y, "data/covtype/covtype.sample04")
     return x, x_test, y, y_test
 
 
 def load_skin():
     data, target = da.load_svmlight_file("data/skin-nonskin/skin_nonskin.txt", 3)
-    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.3)
+    x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.6)
     return x, x_test, y, y_test
 
 def load_libsvm_file(filename):

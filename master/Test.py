@@ -1,40 +1,40 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import time
+
+import sklearn.svm as SVC
+
+import DataLoader as dl
+
+x, x_test, y, y_test = dl.load_libsvm_file("ijcnn")
+
+linSvm = SVC.SVC(kernel="linear", C=10).fit(x, y)
+gaussSvm = SVC.SVC(kernel="rbf", C=10, gamma=1).fit(x, y)
+
+print("Linear SVM Predict Bulk:")
+timeStartLin = time.time()
+linSvm.predict(x_test)
+print(str(time.time() - timeStartLin) + "s")
+
+print("Single")
+timeStartLin = time.time()
+for elem in x_test:
+    linSvm.predict(elem)
+print(str(time.time() - timeStartLin) + "s")
+
+print("Gauss Svm Predict Bulk:")
+timeStartGauss = time.time()
+gaussSvm.predict(x_test)
+print(str(time.time() - timeStartGauss) + "s")
+
+print("Single")
+timeStartGauss = time.time()
+for elem in x_test:
+    gaussSvm.predict(elem)
+print(str(time.time() - timeStartGauss) + "s")
+
+
+
 
 '''
-phi = np.linspace(0,2,100)
-phi = phi * np.pi
-x = np.cos(phi)
-y = np.sin(phi)
-
-x2 = 1.1 * x
-y2 = 1.1 * y
-
-z = x**2 + y**2
-z2 = x2**2 + y2 **2
-
-fig = plt.figure()
-ax1 = fig.add_subplot(121)
-ax1.scatter(x, y, c="r")
-ax1.scatter(x2, y2, c="b")
-ax1.set_xlabel('X')
-ax1.set_ylabel('Y')
-ax1.get_xaxis().set_ticks([])
-ax1.get_yaxis().set_ticks([])
-
-ax2 = fig.add_subplot(122, projection='3d')
-ax2.scatter(x, y, z, c="b")
-ax2.scatter(x2, y2, z2, c="r")
-ax2.set_xlabel('X')
-ax2.set_ylabel('Y')
-ax2.set_zlabel('Z')
-ax2.set_zticks([])
-ax2.get_xaxis().set_ticks([])
-ax2.get_yaxis().set_ticks([])
-
-plt.show()
-'''
-
 # <w,x> + b = 0
 # w = (1,2,3)  x= 1,1,1 b = -6
 w = [1, 2, 3]
@@ -60,3 +60,4 @@ z = (-normal[0] * xx - normal[1] * yy - d) * 1. / normal[2]
 plt3d = plt.figure().gca(projection='3d')
 plt3d.plot_surface(xx, yy, z)
 plt.show()
+'''

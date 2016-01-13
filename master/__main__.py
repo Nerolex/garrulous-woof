@@ -45,7 +45,6 @@ def getClf(clfType):
 
 # region Output methods
 def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
-    _timeFit = timeFit  # HH:MM
     _timeFitLin = clf._timeFitLin  # SS_MSMS
     _timeFitGauss = clf._timeFitGauss  # MM:SS
     _timeFitOver = clf._timeOverhead  # MSMS
@@ -54,20 +53,24 @@ def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     _score = clf.score(x_test, y_test)
     _error = round((1 - _score) * 100, 2)
 
+    _timePredict = clf._timePredict  ## SS_MSMS
+
     _percentGaussTotal = round((_timeFitGauss / _timeTotal) * 100, 2)
     _percentLinTotal = round((_timeFitLin / _timeTotal * 100), 2)
     _percentOverTotal = round((_timeFitOver / _timeTotal * 100), 2)
 
     # Bring Time data in readable format
-    _timeFit = secondsToHourMin(_timeFit)
+    _timeFit = secondsToHourMin(_timeTotal)
     _timeFitLin = secondsToSecMilsec(_timeFitLin)
     _timeFitGauss = secondsToMinSec(_timeFitGauss)
     _timeFitOver = secondsToMilsec(_timeFitOver)
+    _timePredict = secondsToSecMilsec(_timePredict)
 
-    raw_output[8].append(_timeFit + ";")
-    raw_output[9].append(_timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)" + ";")
-    raw_output[10].append(_timeFitLin + "\t(" + str(_percentLinTotal) + "%)" + ";")
-    raw_output[11].append(_timeFitOver + "\t(" + str(_percentOverTotal) + "%)" + ";")
+    raw_output[7].append(_timeFit + ";")
+    raw_output[8].append(_timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)" + ";")
+    raw_output[9].append(_timeFitLin + "\t(" + str(_percentLinTotal) + "%)" + ";")
+    raw_output[10].append(_timeFitOver + "\t(" + str(_percentOverTotal) + "%)" + ";")
+    raw_output[11].append(_timePredict + ";")
     raw_output[12].append(str(_error) + "%;")
 
     return raw_output
@@ -88,17 +91,16 @@ def printMiscStatsDualSvm(clf, raw_output):
     lin_c = toPowerOfTen(clf._linSVC.C) + ";"
     gauss_c = toPowerOfTen(clf._gaussSVC.C) + ";"
     gauss_gamma = toPowerOfTen(clf._gaussSVC.gamma) + ";"
-    grid_lin = str(clf._searchLin) + ";"
-    grid_gauss = str(clf._searchGauss) + ";"
+    n_gaussSVs = str(clf._gaussSVC.n_support_[0] + clf._gaussSVC.n_support_[1]) + ";"
 
     raw_output[0].append(gauss_stat)
     raw_output[1].append(lin_stat)
-    raw_output[2].append(dec_margin)
+    raw_output[2].append(str(dec_margin).replace(".", ","))
     raw_output[3].append(lin_c)
     raw_output[4].append(gauss_c)
     raw_output[5].append(gauss_gamma)
-    raw_output[6].append(grid_lin)
-    raw_output[7].append(grid_gauss)
+    raw_output[6].append(n_gaussSVs)
+
 
 def printGridsearchStatisticsDualSvm(clf, output):
     printLine(output, 20)
@@ -205,12 +207,12 @@ def run_batch(data):
                   ["C linear;"],  # 3
                   ["C gauss;"],  # 4
                   ["gamma gauss;"],  # 5
-                  ["Gridsearch linear;"],  # 6
-                  ["Gridsearch gauss;"],  # 7
-                  ["time to fit;"],  # 8
-                  ["      gauss;"],  # 9
-                  ["      linear;"],  # 10
-                  ["      overhead;"],  # 11
+                  ["number SVs gauss;"],  # 6
+                  ["time to fit;"],  # 7
+                  ["      gauss;"],  # 8
+                  ["      linear;"],  # 9
+                  ["      overhead;"],  # 10
+                  ["time to predict;"],  # 11
                   ["Error;"]  # 12
                   ]
 
@@ -218,7 +220,7 @@ def run_batch(data):
     x, x_test, y, y_test = dl.load_data(data)
     printDataStatistics(output, data, x, x_test)
 
-    for i in range(3):
+    for i in range(1):
         run(x, x_test, y, y_test, 0.2 * (i + 1), raw_output)
 
     for row in raw_output:
@@ -233,7 +235,7 @@ def run_batch(data):
 # main program
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 run_batch("ijcnn")
-run_batch("cod-rna")
-run_batch("skin")
-run_batch("covtype")
+# run_batch("cod-rna")
+# run_batch("skin")
+#run_batch("covtype")
 print("Done!")
