@@ -36,7 +36,7 @@ def getClf(clfType):
                 verbose = split_line[1].strip("\n") == "True"
         config.close()
 
-        return ds.DualSvm(cLin, cGauss, gamma, False, 0.0, 0.0, searchGauss, searchLin, verbose)
+        return ds.DualSvm(cLin, cGauss, gamma, 0.0, searchGauss, searchLin, verbose)
     elif clfType == "linear":
         return SVC.LinearSVC(C=0.0001)
     elif clfType == "gauss":
@@ -91,7 +91,10 @@ def printMiscStatsDualSvm(clf, raw_output):
     lin_c = toPowerOfTen(clf._linSVC.C) + ";"
     gauss_c = toPowerOfTen(clf._gaussSVC.C) + ";"
     gauss_gamma = toPowerOfTen(clf._gaussSVC.gamma) + ";"
-    n_gaussSVs = str(clf._gaussSVC.n_support_[0] + clf._gaussSVC.n_support_[1]) + ";"
+    try:
+        n_gaussSVs = str(clf._gaussSVC.n_support_[0] + clf._gaussSVC.n_support_[1]) + ";"
+    except AttributeError:
+        n_gaussSVs = "0;"
 
     raw_output[0].append(gauss_stat)
     raw_output[1].append(lin_stat)
@@ -195,13 +198,6 @@ def run(x, x_test, y, y_test, count, raw_output):
 def run_batch(data):
     # Output
     date = str(time.asctime(time.localtime(time.time())))
-    header = data + " " + date
-    print(str(header))
-    header = header.replace(" ", "_")
-    header = header.replace(":", "_")
-    file = 'master/output/' + header + ".csv"
-    output = open(file, 'a')
-    printHeader(output)
 
     raw_output = [["Points gaussian;"],  # 0
                   ["Points linear;"],  # 1
@@ -220,10 +216,19 @@ def run_batch(data):
 
     # Load the data
     x, x_test, y, y_test = dl.load_data(data)
-    printDataStatistics(output, data, x, x_test)
 
-    for i in range(1):
+    for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
+        run(x, x_test, y, y_test, 0.05 * j, raw_output)
+    for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         run(x, x_test, y, y_test, 0.2 * (i + 1), raw_output)
+
+    header = data + " " + date
+    header = header.replace(" ", "_")
+    header = header.replace(":", "_")
+    file = 'master/output/' + header + ".csv"
+    output = open(file, 'a')
+    printHeader(output)
+    printDataStatistics(output, data, x, x_test)
 
     for row in raw_output:
         str_row = ""
