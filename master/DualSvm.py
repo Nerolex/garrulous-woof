@@ -7,7 +7,7 @@ import time
 import numpy as np
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 
 """
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
@@ -41,7 +41,7 @@ class DualSvm(object):
         self._verbose = verbose
 
         # Intern objects
-        self._linSVC = SVC(C=self._cLin, kernel="linear")
+        self._linSVC = LinearSVC(C=self._cLin)
         self._gaussSVC = SVC(C=self._cGauss, kernel="rbf", gamma=self._gamma)
 
         self._debugFile = open('master/output/debug.txt', 'a')
@@ -189,7 +189,7 @@ class DualSvm(object):
             return predictions
 
         if 0.0 < self._count < 1.0:
-            fx = self._linSVC.decision_function(X)
+            fx = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
             gaussIndices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
             linIndices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
             linPreds = self._linSVC.predict(X[linIndices])
@@ -226,7 +226,7 @@ class DualSvm(object):
         @return: Returns data and labels within and without the calculated regions.
         """
         timeStart = time.time()
-        margins = abs(self._linSVC.decision_function(X))
+        margins = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
 
         # Calculate the actual number of points to be taken into account
         n = np.ceil(count * X.shape[0])
@@ -260,7 +260,7 @@ class DualSvm(object):
         C_range = np.logspace(-2, 10, 13, base=10.0)
         param_grid = dict(C=C_range)
         cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(SVC(kernel="linear"), param_grid=param_grid, cv=cv)
+        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv)
         grid.fit(X, y)
 
         _C = grid.best_params_['C']
