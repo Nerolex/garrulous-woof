@@ -102,7 +102,7 @@ class DualSvm(object):
 
     def console(self, str):
         time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
-        self._debugFile.write(time_str + str)
+        self._debugFile.write(time_str + str + "\n")
 
     def fit(self, X, y):
         """
