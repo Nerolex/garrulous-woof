@@ -181,9 +181,11 @@ def secondsToMilsec(s):
 
 #endregion
 
-def run(x, x_test, y, y_test, count, raw_output):
+def run(x, x_test, y, y_test, count, gridGauss, gridLin, raw_output):
         #Load the classifier
         clf = getClf("dualSvm")
+        clf._searchGauss = gridGauss
+        clf._searchLin = gridLin
         clf._count = count
 
         #Notice that the result can be distored by the gridsearch for the dual svm.
@@ -216,11 +218,18 @@ def run_batch(data):
 
     # Load the data
     x, x_test, y, y_test = dl.load_data(data)
-
+    gridGauss = False
+    gridLin = False
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
-        run(x, x_test, y, y_test, 0.05 * j, raw_output)
+        if j == 0:
+            gridLin = True
+        run(x, x_test, y, y_test, 0.05 * j, gridGauss, gridLin, raw_output)
+        gridLin = False
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
-        run(x, x_test, y, y_test, 0.2 * (i + 1), raw_output)
+        if i == 0:
+            gridGauss = True
+        run(x, x_test, y, y_test, 0.2 * (i + 1), gridGauss, gridLin, raw_output)
+        gridGauss = False
 
     header = data + " " + date
     header = header.replace(" ", "_")
