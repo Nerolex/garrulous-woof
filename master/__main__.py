@@ -250,8 +250,8 @@ def run_batch(data):
 
 # main program
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-run_batch("ijcnn")
-# run_batch("cod-rna")
+# run_batch("ijcnn")
+run_batch("cod-rna")
 # run_batch("skin")
 #run_batch("covtype")
 print("Done!")
