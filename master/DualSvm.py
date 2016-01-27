@@ -180,12 +180,15 @@ class DualSvm(object):
         """
 
         timeStart = time.time()
-
+        if self._verbose:
+            self.console("Starting predicting.")
         n = np.ceil(self._count * X.shape[0])
 
         if n == 0 or self._count == 0.0:
             predictions = self._linSVC.predict(X)
             self._timePredict = time.time() - timeStart
+            if self._verbose:
+                self.console("Finished predicting.")
             return predictions
 
         if 0.0 < self._count < 1.0:
@@ -198,11 +201,15 @@ class DualSvm(object):
             predictions[linIndices] = linPreds
             predictions[gaussIndices] = gaussPreds
             self._timePredict = time.time() - timeStart
+            if self._verbose:
+                self.console("Finished predicting.")
             return predictions
 
         if self._count == 1.0:
             predictions = self._gaussSVC.predict(X)
             self._timePredict = time.time() - timeStart
+            if self._verbose:
+                self.console("Finished predicting.")
             return predictions
 
         # If no condition matched

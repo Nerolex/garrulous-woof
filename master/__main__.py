@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import time
 import warnings
 
@@ -124,6 +125,9 @@ def printHeader(output):
     output.write("\n")
 
 
+def console(self, str):
+    time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
+    print(time_str + str + "\n")
 #endregion
 
 #region Conversion Methods
@@ -220,6 +224,7 @@ def run_batch(data):
     x, x_test, y, y_test = dl.load_data(data)
     gridGauss = False
     gridLin = False
+    console("Starting batch run, " + data)
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         if j == 0:
             gridLin = True
@@ -230,6 +235,7 @@ def run_batch(data):
             gridGauss = True
         run(x, x_test, y, y_test, 0.2 * (i + 1), gridGauss, gridLin, raw_output)
         gridGauss = False
+    console("Batch run complete.")
 
     header = data + " " + date
     header = header.replace(" ", "_")
