@@ -125,7 +125,7 @@ def printHeader(output):
     output.write("\n")
 
 
-def console(self, str):
+def console(str):
     time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
     print(time_str + str + "\n")
 #endregion
