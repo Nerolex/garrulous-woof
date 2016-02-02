@@ -15,7 +15,7 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, count=0, searchGauss=False, searchLin=False,
+    def __init__(self, cLin, cGauss, gamma, k=0, searchGauss=False, searchLin=False,
                  verbose=False):
         """
         The constructor of the class. Here the important members are initialized.
@@ -35,7 +35,7 @@ class DualSvm(object):
         self._cLin = cLin
         self._cGauss = cGauss
         self._gamma = gamma
-        self._count = count
+        self._k = k
         self._searchGauss = searchGauss
         self._searchLin = searchLin
 
@@ -52,6 +52,10 @@ class DualSvm(object):
     # region Getters and Setters
     @property
     def cLin(self):
+        """
+        The C parameter for the linear SVM.
+        @return: C for linear SVM
+        """
         return self._cLin
 
     @cLin.setter
@@ -61,6 +65,10 @@ class DualSvm(object):
 
     @property
     def cGauss(self):
+        """
+        The C parameter for the gauss SVM.
+        @return: C for gauss SVM
+        """
         return self._cGauss
 
     @cGauss.setter
@@ -70,6 +78,10 @@ class DualSvm(object):
 
     @property
     def gamma(self):
+        """
+        The gamma parameter for the gauss SVM.
+        @return: gamma for gauss SVM
+        """
         return self._gamma
 
     @gamma.setter
@@ -79,14 +91,23 @@ class DualSvm(object):
 
     @property
     def count(self):
-        return self._count
+        """
+        The percentage of points that should be given to the second classifier.
+
+        @return: k
+        """
+        return self._k
 
     @count.setter
     def count(self, value):
-        self._count = value
+        self._k = value
 
     @property
     def nGauss(self):
+        """
+        The number of points that were used training the gauss SVM.
+        @return: nGauss
+        """
         return self._nGauss
 
     @nGauss.setter
@@ -95,11 +116,41 @@ class DualSvm(object):
 
     @property
     def nLin(self):
+        """
+        The number of points that were used training the linear SVM.
+        @return: nLin
+        """
         return self._nLin
 
     @nLin.setter
     def nLin(self, value):
         self._nLin = value
+
+    @property
+    def margins(self):
+        """
+        List with two elements. Defines the range of margins which is used in the predict() method to determine if a point should be given to the gauss svm.
+        Values are 0 if all points should be classified by the linear classifier.
+        Values are -1 if all points should be classified by the gaussian classifier.
+        @return: minMargin, maxMargin
+        """
+        return self._margins
+
+    @margins.setter
+    def margins(self, value):
+        self._margins = value
+
+    @property
+    def verbose(self):
+        """
+        Debug parameter. Used to limit the logging level.
+        @return: self._verbose
+        """
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        self._verbose = value
 
     # endregion
 
@@ -109,10 +160,6 @@ class DualSvm(object):
 
         :param str: String to be logged.
         :return: none
-        """
-        """
-        :param str:
-        :return:
         """
         time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
         self._debugFile.write(time_str + str + "\n")
@@ -148,7 +195,7 @@ class DualSvm(object):
             self.console("Sorting points for classifiers.")
         timeStartOverhead = time.time()
 
-        x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._count)
+        x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._k)
 
         try:
             self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
@@ -186,7 +233,7 @@ class DualSvm(object):
 
     def predict(self, X):
         """
-        Predicts the labels for the given data vector X.
+        Predicts the labels for the given data vector X. Uses the range _margins defined in the fit()-method to determine which classifier should predict which element in the data vector x.
 
         :param X: Data vector.
         :return: Vector of predictions.
@@ -197,16 +244,23 @@ class DualSvm(object):
         timeStart = time.time()
         if self._verbose:
             self.console("Starting predicting.")
-        n = np.ceil(self._count * X.shape[0])
-        # TODO: Decide based on margin attribute
-        if n == 0 or self._count == 0.0:
+
+        """
+        If-Construct to account for the border cases (all points for one classifier):
+
+        (1) margins = [0, 0]: All points used for the linear SVM.
+        (2) e.g. margins = [-0.3, 0.3] Points distributed between both. Standard case.
+        (3) margins = [1, -1]: All points used for the gauss SVM. (fit()-Method set margins to -1)
+        """
+
+        if self._margins[1] == 0.0: #(1)
             predictions = self._linSVC.predict(X)
             self._timePredict = time.time() - timeStart
             if self._verbose:
                 self.console("Finished predicting.")
             return predictions
 
-        if 0.0 < self._count < 1.0:
+        if 0.0 < self.margins[1] < 1.0: #(2)
             fx = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
             gaussIndices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
             linIndices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
@@ -220,7 +274,7 @@ class DualSvm(object):
                 self.console("Finished predicting.")
             return predictions
 
-        if self._count == 1.0:
+        if self._marings[1] == -1: #(3)
             predictions = self._gaussSVC.predict(X)
             self._timePredict = time.time() - timeStart
             if self._verbose:
@@ -232,6 +286,12 @@ class DualSvm(object):
 
 
     def score(self, X, y):
+        """
+        Method that calculates the score for a given test set X,y.
+        @param X: Test vector of datapoints
+        @param y: Test vector of labels
+        @return: score value
+        """
         y_hat = self.predict(X)
         score = 0
         for i in range(y.shape[0]):
@@ -272,13 +332,20 @@ class DualSvm(object):
         if count == 1.0:
             x_inner = X
             y_inner = y
-            max_margin = 99999
+            max_margin = -1
 
         margins = [-max_margin, max_margin]
 
         return x_inner, y_inner, margins
 
     def gridsearchForLinear(self, X, y):
+        """
+        Parameter tuning for the linear classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal values of the first grid.
+
+        @param X: Data x
+        @param y: Labels y
+        @return: Best parameters
+        """
         self.console("Linear SVC: Starting coarse gridsearch for gaussian classifier.")
         # LinSvm gridSearch
         C_range = np.logspace(-2, 10, 13, base=10.0)
@@ -304,6 +371,13 @@ class DualSvm(object):
         return _C
 
     def gridsearchForGauss(self, X, y):
+        """
+        Parameter tuning for the gauss classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal val
+
+        @param X: Data x
+        @param y: Labels y
+        @return: Best parameters
+        """
         self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
         C_range = np.logspace(-2, 10, 13, base=10.0)
         gamma_range = np.logspace(-9, 3, 13, base=10.0)
