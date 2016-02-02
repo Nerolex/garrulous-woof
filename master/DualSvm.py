@@ -18,14 +18,17 @@ class DualSvm(object):
     def __init__(self, cLin, cGauss, gamma, count=0, searchGauss=False, searchLin=False,
                  verbose=False):
         """
+        The constructor of the class. Here the important members are initialized.
 
-        @param cLin:      C parameter for linear svm
-        @param cGauss:    C parameter for gaussian svm
-        @param gamma:     Gamma parameter for the gaussian svm
-        @param count:     Used if useFactor is set to False. Determines a count of points which is used to determine close points to the hyperplane.
-        @param searchGauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
-        @param searchLin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
-        @return:          Returns self.
+        :param cLin:      C parameter for linear svm
+        :param cGauss:    C parameter for gaussian svm
+        :param gamma:     Gamma parameter for the gaussian svm
+        :param k:         k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
+        :param searchGauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
+        :param searchLin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
+        :param verbose: Debug parameter for logging events into a file debug.txt.
+        :return:          Returns self.
+
         """
 
         # Paramters
@@ -101,18 +104,27 @@ class DualSvm(object):
     # endregion
 
     def console(self, str):
+        """
+        Debug function. Logs the timestamp for the given string in an external debug file.
+
+        :param str: String to be logged.
+        :return: none
+        """
+        """
+        :param str:
+        :return:
+        """
         time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
         self._debugFile.write(time_str + str + "\n")
 
     def fit(self, X, y):
         """
         Fits a linear SVC on the given data.
-        Afterwards, certain datapoints are selected and given to a gaussian SVC. The selection is dependant on the attribute L{useFactor} of this object.
+        Afterwards, certain datapoints are selected and given to a gaussian SVC. The selection is dependant on the attribute useFactor of this object.
 
-
-        @param X: Training vector
-        @param y: Target vector relative to X
-        @return: Returns self.
+        :param X: Training vector
+        :param y: Target vector relative to X
+        :return: Returns self.
         """
 
         if (self._verbose):
@@ -174,16 +186,19 @@ class DualSvm(object):
 
     def predict(self, X):
         """
+        Predicts the labels for the given data vector X.
 
-        @param X:
-        @return:
+        :param X: Data vector.
+        :return: Vector of predictions.
+
         """
+
 
         timeStart = time.time()
         if self._verbose:
             self.console("Starting predicting.")
         n = np.ceil(self._count * X.shape[0])
-
+        # TODO: Decide based on margin attribute
         if n == 0 or self._count == 0.0:
             predictions = self._linSVC.predict(X)
             self._timePredict = time.time() - timeStart
@@ -227,10 +242,11 @@ class DualSvm(object):
 
     def getPointsCloseToHyperplaneByCount(self, X, y, count):
         """
-        @param clf: Linear Classifier to be used.
-        @param X: Array of unlabeled datapoints.
-        @param factor: Factor that determines how close the data should be to the hyperplane.
-        @return: Returns data and labels within and without the calculated regions.
+        Helper method for determining the subset of points to be given to the gaussian classifier.
+
+        :param X: Array of unlabeled datapoints.
+        :param k: k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
+        :return: Returns data vectors x_inner, y_inner and margins. x_inner and y_inner represent the labeled subset which will be given to the gaussian svm. margins is a list with to elements, which represents the interval, in which the gaussian classifier should be used. This is used in the predict()-method.
         """
         timeStart = time.time()
         margins = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
@@ -263,37 +279,49 @@ class DualSvm(object):
         return x_inner, y_inner, margins
 
     def gridsearchForLinear(self, X, y):
+        self.console("Linear SVC: Starting coarse gridsearch for gaussian classifier.")
         # LinSvm gridSearch
         C_range = np.logspace(-2, 10, 13, base=10.0)
         param_grid = dict(C=C_range)
         cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv)
+        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
+        grid.fit(X, y)
+
+        _C = grid.best_params_['C']
+
+        self.console("Linear SVC: Finished coarse gridsearch with params: C: " + str(_C))
+        self.console("Linear SVC: Starting fine gridsearch:")
+
+        C_range_2 = np.linspace(_C - 0.2 * _C, _C + 0.2 * _C, num=5)
+        param_grid = dict(C=C_range_2)
+        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
 
         _C = grid.best_params_['C']
         self._linSVC.set_params(C=_C)
-
-        self.console("Linear SVC: Finished coarse gridsearch with params: C: " + str(_C))
+        self.console("Linear SVC: Finished fine gridsearch with params: C: " + str(_C))
 
         return _C
 
     def gridsearchForGauss(self, X, y):
+        self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
         C_range = np.logspace(-2, 10, 13, base=10.0)
         gamma_range = np.logspace(-9, 3, 13, base=10.0)
         param_grid = dict(gamma=gamma_range, C=C_range)
 
         cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv)
+        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
         _C = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
 
         self.console("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_C) + " gamma: " + str(_gamma))
+        self.console("Gauss SVC: Starting fine for gaussian classifier.")
 
         C_range_2 = np.linspace(_C - 0.2 * _C, _C + 0.2 * _C, num=5)
         gamma_range_2 = np.linspace(_C - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
         param_grid = dict(gamma=gamma_range_2, C=C_range_2)
-        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv)
+        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
 
         _C = grid.best_params_['C']
