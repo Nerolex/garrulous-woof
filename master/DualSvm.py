@@ -15,53 +15,53 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 
 
 class DualSvm(object):
-    def __init__(self, cLin, cGauss, gamma, k=0, searchGauss=False, searchLin=False,
+    def __init__(self, c_lin, c_gauss, gamma, k=0, search_gauss=False, search_lin=False,
                  verbose=False):
         """
         The constructor of the class. Here the important members are initialized.
 
-        :param cLin:      C parameter for linear svm
-        :param cGauss:    C parameter for gaussian svm
+        :param c_lin:      C parameter for linear svm
+        :param c_gauss:    C parameter for gaussian svm
         :param gamma:     Gamma parameter for the gaussian svm
         :param k:         k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
-        :param searchGauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
-        :param searchLin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
+        :param search_gauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
+        :param search_lin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
         :param verbose: Debug parameter for logging events into a file debug.txt.
         :return:          Returns self.
 
         """
 
-        # Paramters
-        self._cLin = cLin
-        self._cGauss = cGauss
+        # Parameters
+        self._c_lin = c_lin
+        self._c_gauss = c_gauss
         self._gamma = gamma
         self._k = k
-        self._searchGauss = searchGauss
-        self._searchLin = searchLin
+        self._search_gauss = search_gauss
+        self._search_lin = search_lin
 
-        self._nGauss = -1
-        self._nLin = -1
+        self._n_gauss = -1
+        self._n_lin = -1
         self._verbose = verbose
 
         # Intern objects
-        self._linSVC = LinearSVC(C=self._cLin)
-        self._gaussSVC = SVC(C=self._cGauss, kernel="rbf", gamma=self._gamma)
+        self._lin_svc = LinearSVC(C=self._c_lin)
+        self._gauss_svc = SVC(C=self._c_gauss, kernel="rbf", gamma=self._gamma)
 
-        self._debugFile = open('master/output/debug.txt', 'a')
+        self._debug_file = open('master/output/debug.txt', 'a')
 
     # region Getters and Setters
     @property
-    def cLin(self):
+    def c_lin(self):
         """
         The C parameter for the linear SVM.
         @return: C for linear SVM
         """
-        return self._cLin
+        return self._c_lin
 
-    @cLin.setter
-    def cLin(self, value):
-        self._cLin = value
-        self._linSVC(C=value)
+    @c_lin.setter
+    def c_lin(self, value):
+        self._c_lin = value
+        self._lin_svc(C=value)
 
     @property
     def cGauss(self):
@@ -69,12 +69,12 @@ class DualSvm(object):
         The C parameter for the gauss SVM.
         @return: C for gauss SVM
         """
-        return self._cGauss
+        return self._c_gauss
 
     @cGauss.setter
     def cGauss(self, value):
-        self._cGauss = value
-        self._gaussSVC(C=value)
+        self._c_gauss = value
+        self._gauss_svc(C=value)
 
     @property
     def gamma(self):
@@ -87,10 +87,10 @@ class DualSvm(object):
     @gamma.setter
     def gamma(self, value):
         self._gamma = value
-        self._gaussSVC(gamma=value)
+        self._gauss_svc(gamma=value)
 
     @property
-    def count(self):
+    def k(self):
         """
         The percentage of points that should be given to the second classifier.
 
@@ -98,33 +98,33 @@ class DualSvm(object):
         """
         return self._k
 
-    @count.setter
+    @k.setter
     def count(self, value):
         self._k = value
 
     @property
-    def nGauss(self):
+    def n_gauss(self):
         """
         The number of points that were used training the gauss SVM.
-        @return: nGauss
+        @return: n_gauss
         """
-        return self._nGauss
+        return self._n_gauss
 
-    @nGauss.setter
-    def nGauss(self, value):
-        self._nGauss = value
+    @n_gauss.setter
+    def n_gauss(self, value):
+        self._n_gauss = value
 
     @property
-    def nLin(self):
+    def n_lin(self):
         """
         The number of points that were used training the linear SVM.
-        @return: nLin
+        @return: n_lin
         """
-        return self._nLin
+        return self._n_lin
 
-    @nLin.setter
-    def nLin(self, value):
-        self._nLin = value
+    @n_lin.setter
+    def n_lin(self, value):
+        self._n_lin = value
 
     @property
     def margins(self):
@@ -162,7 +162,7 @@ class DualSvm(object):
         :return: none
         """
         time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
-        self._debugFile.write(time_str + str + "\n")
+        self._debug_file.write(time_str + str + "\n")
 
     def fit(self, X, y):
         """
@@ -174,61 +174,61 @@ class DualSvm(object):
         :return: Returns self.
         """
 
-        if (self._verbose):
+        if self._verbose:
             self.console("Starting fitting process.\n")
 
         # If set to True, this will search for the best C with gridsearch:
-        if (self._searchLin):
-            if (self._verbose):
+        if self._search_lin:
+            if self._verbose:
                 self.console("Starting Gridsearch for linear SVC.")
-            self._cLin = self.gridsearchForLinear(X, y)
+            self._c_lin = self.gridsearch_for_linear(X, y)
 
-        if (self._verbose):
+        if self._verbose:
             self.console("Starting fitting process for linear SVC.")
-        timeStartLin = time.time()
-        self._linSVC.fit(X, y)
-        self._timeFitLin = time.time() - timeStartLin
-        if (self._verbose):
+        time_start_lin = time.time()
+        self._lin_svc.fit(X, y)
+        self._time_fit_lin = time.time() - time_start_lin
+        if self._verbose:
             self.console("Completed fitting process for linear SVC.")
 
-        if (self._verbose):
+        if self._verbose:
             self.console("Sorting points for classifiers.")
-        timeStartOverhead = time.time()
+        time_start_overhead = time.time()
 
-        x, y, margins = self.getPointsCloseToHyperplaneByCount(X, y, self._k)
+        x, y, margins = self.get_points_close_to_hyperplane_by_count(X, y, self._k)
 
         try:
-            self._nGauss = x.shape[0]  # Measure the number of points for gauss classifier:
+            self._n_gauss = x.shape[0]  # Measure the number of points for gauss classifier:
         except AttributeError:
-            self._nGauss = len(x)
+            self._n_gauss = len(x)
 
         self._margins = margins
 
-        self._timeOverhead = time.time() - timeStartOverhead
+        self._time_overhead = time.time() - time_start_overhead
         if (self._verbose):
             self.console("Sorting finished.")
 
         # Measure the number of points for linear classifier:
-        self._nLin = X.shape[0] - self._nGauss
+        self._n_lin = X.shape[0] - self._n_gauss
 
         # If set to True, this will search for the best C with gridsearch:
-        if (self._searchGauss and self._nGauss != 0):
-            if (self._verbose):
+        if self._search_gauss and self._n_gauss != 0:
+            if self._verbose:
                 self.console("Starting gridsearch for gaussian classifier.")
-            self._cGauss, self._gamma = self.gridsearchForGauss(x, y)
+            self._c_gauss, self._gamma = self.gridsearch_for_gauss(x, y)
 
-        if (self._verbose):
+        if self._verbose:
             self.console("Starting fitting process for gaussian SVC.")
 
-        timeStartGauss = time.time()
+        time_start_gauss = time.time()
 
-        if self._nGauss != 0:
-            self._gaussSVC.fit(x, y)
-        self._timeFitGauss = time.time() - timeStartGauss
+        if self._n_gauss != 0:
+            self._gauss_svc.fit(x, y)
+        self._time_fit_gauss = time.time() - time_start_gauss
 
-        if (self._verbose):
+        if self._verbose:
             self.console("Completed fitting process for gaussian SVC.")
-        if (self._verbose):
+        if self._verbose:
             self.console("Finished fitting process.\n")
 
     def predict(self, X):
@@ -240,8 +240,7 @@ class DualSvm(object):
 
         """
 
-
-        timeStart = time.time()
+        time_start = time.time()
         if self._verbose:
             self.console("Starting predicting.")
 
@@ -253,37 +252,36 @@ class DualSvm(object):
         (3) margins = [1, -1]: All points used for the gauss SVM. (fit()-Method set margins to -1)
         """
 
-        if self._margins[1] == 0.0: #(1)
-            predictions = self._linSVC.predict(X)
-            self._timePredict = time.time() - timeStart
+        if self._margins[1] == 0.0:  # (1)
+            predictions = self._lin_svc.predict(X)
+            self._time_predict = time.time() - time_start
             if self._verbose:
                 self.console("Finished predicting.")
             return predictions
 
-        if 0.0 < self.margins[1] < 1.0: #(2)
-            fx = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
-            gaussIndices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
-            linIndices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
-            linPreds = self._linSVC.predict(X[linIndices])
-            gaussPreds = self._gaussSVC.predict(X[gaussIndices])
-            predictions = np.zeros(len(linPreds) + len(gaussPreds))
-            predictions[linIndices] = linPreds
-            predictions[gaussIndices] = gaussPreds
-            self._timePredict = time.time() - timeStart
+        if 0.0 < self.margins[1] < 1.0:  # (2)
+            fx = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
+            gauss_indices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
+            lin_indices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
+            lin_predictions = self._lin_svc.predict(X[lin_indices])
+            gauss_predictions = self._gauss_svc.predict(X[gauss_indices])
+            predictions = np.zeros(len(lin_predictions) + len(gauss_predictions))
+            predictions[lin_indices] = lin_predictions
+            predictions[gauss_indices] = gauss_predictions
+            self._time_predict = time.time() - time_start
             if self._verbose:
                 self.console("Finished predicting.")
             return predictions
 
-        if self._marings[1] == -1: #(3)
-            predictions = self._gaussSVC.predict(X)
-            self._timePredict = time.time() - timeStart
+        if self._marings[1] == -1:  # (3)
+            predictions = self._gauss_svc.predict(X)
+            self._time_predict = time.time() - time_start
             if self._verbose:
                 self.console("Finished predicting.")
             return predictions
 
         # If no condition matched
         raise Exception("Fatal error: Count param")
-
 
     def score(self, X, y):
         """
@@ -300,7 +298,7 @@ class DualSvm(object):
         score /= y.shape[0]
         return score
 
-    def getPointsCloseToHyperplaneByCount(self, X, y, count):
+    def get_points_close_to_hyperplane_by_count(self, X, y, k):
         """
         Helper method for determining the subset of points to be given to the gaussian classifier.
 
@@ -308,28 +306,28 @@ class DualSvm(object):
         :param k: k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
         :return: Returns data vectors x_inner, y_inner and margins. x_inner and y_inner represent the labeled subset which will be given to the gaussian svm. margins is a list with to elements, which represents the interval, in which the gaussian classifier should be used. This is used in the predict()-method.
         """
-        timeStart = time.time()
-        margins = abs(self._linSVC.decision_function(X)) / np.linalg.norm(self._linSVC.coef_[0])
+        time_start = time.time()
+        margins = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
 
         # Calculate the actual number of points to be taken into account
-        n = np.ceil(count * X.shape[0])
+        n = np.ceil(k * X.shape[0])
 
         # 3 Cases to consider:
-        # 1) n or count = 0: All points should be classified by the linear classifier. No points given to the gaussian
-        # 2) n or count > 0 and count < 1 standard case
+        # 1) n or k = 0: All points should be classified by the linear classifier. No points given to the gaussian
+        # 2) n or k > 0 and count < 1 standard case
         # 3) count = 1 All points should be classified by the gaussian classifier.
 
-        if n == 0 or count == 0.0:
+        if n == 0 or k == 0.0:
             x_inner = []
             y_inner = []
             max_margin = 0
-        if 0.0 < count < 1.0:
+        if 0.0 < k < 1.0:
             indices = np.argpartition(margins, n)[:n]  # get the indices of the n smallest elements
             x_inner = X[indices]
             y_inner = y[indices]
             # Keep track of minimal and maximal margins
             max_margin = max(margins[indices])
-        if count == 1.0:
+        if k == 1.0:
             x_inner = X
             y_inner = y
             max_margin = -1
@@ -338,7 +336,7 @@ class DualSvm(object):
 
         return x_inner, y_inner, margins
 
-    def gridsearchForLinear(self, X, y):
+    def gridsearch_for_linear(self, X, y):
         """
         Parameter tuning for the linear classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal values of the first grid.
 
@@ -348,29 +346,29 @@ class DualSvm(object):
         """
         self.console("Linear SVC: Starting coarse gridsearch for gaussian classifier.")
         # LinSvm gridSearch
-        C_range = np.logspace(-2, 10, 13, base=10.0)
-        param_grid = dict(C=C_range)
+        c_range = np.logspace(-2, 10, 13, base=10.0)
+        param_grid = dict(C=c_range)
         cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
         grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
 
-        _C = grid.best_params_['C']
+        _c = grid.best_params_['C']
 
-        self.console("Linear SVC: Finished coarse gridsearch with params: C: " + str(_C))
+        self.console("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
         self.console("Linear SVC: Starting fine gridsearch:")
 
-        C_range_2 = np.linspace(_C - 0.2 * _C, _C + 0.2 * _C, num=5)
-        param_grid = dict(C=C_range_2)
+        c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
+        param_grid = dict(C=c_range_2)
         grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
 
-        _C = grid.best_params_['C']
-        self._linSVC.set_params(C=_C)
-        self.console("Linear SVC: Finished fine gridsearch with params: C: " + str(_C))
+        _c = grid.best_params_['C']
+        self._lin_svc.set_params(C=_c)
+        self.console("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
 
-        return _C
+        return _c
 
-    def gridsearchForGauss(self, X, y):
+    def gridsearch_for_gauss(self, X, y):
         """
         Parameter tuning for the gauss classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal val
 
@@ -379,29 +377,29 @@ class DualSvm(object):
         @return: Best parameters
         """
         self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
-        C_range = np.logspace(-2, 10, 13, base=10.0)
+        c_range = np.logspace(-2, 10, 13, base=10.0)
         gamma_range = np.logspace(-9, 3, 13, base=10.0)
-        param_grid = dict(gamma=gamma_range, C=C_range)
+        param_grid = dict(gamma=gamma_range, C=c_range)
 
         cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
         grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
-        _C = grid.best_params_['C']
+        _c = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
 
-        self.console("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_C) + " gamma: " + str(_gamma))
+        self.console("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
         self.console("Gauss SVC: Starting fine for gaussian classifier.")
 
-        C_range_2 = np.linspace(_C - 0.2 * _C, _C + 0.2 * _C, num=5)
-        gamma_range_2 = np.linspace(_C - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
-        param_grid = dict(gamma=gamma_range_2, C=C_range_2)
+        c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
+        gamma_range_2 = np.linspace(_c - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
+        param_grid = dict(gamma=gamma_range_2, C=c_range_2)
         grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
         grid.fit(X, y)
 
-        _C = grid.best_params_['C']
+        _c = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
 
-        self.console("Gauss SVC: Finished fine gridsearch with params: C: " + str(_C) + " gamma: " + str(_gamma))
+        self.console("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
 
-        self._gaussSVC.set_params(C=_C, gamma=_gamma)
-        return _C, _gamma
+        self._gauss_svc.set_params(C=_c, gamma=_gamma)
+        return _c, _gamma
