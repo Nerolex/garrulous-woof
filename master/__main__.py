@@ -45,15 +45,15 @@ def getClf(clfType):
 
 # region Output methods
 def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
-    _timeFitLin = clf._timeFitLin  # SS_MSMS
-    _timeFitGauss = clf._timeFitGauss  # MM:SS
-    _timeFitOver = clf._timeOverhead  # MSMS
+    _timeFitLin = clf.time_fit_lin  # SS_MSMS
+    _timeFitGauss = clf.time_fit_gauss  # MM:SS
+    _timeFitOver = clf.time_overhead  # MSMS
     _timeTotal = _timeFitLin + _timeFitGauss + _timeFitOver
 
     _score = clf.score(x_test, y_test)
     _error = round((1 - _score) * 100, 2)
 
-    _timePredict = clf._timePredict  ## SS_MSMS
+    _timePredict = clf.time_predict  ## SS_MSMS
 
     _percentGaussTotal = round((_timeFitGauss / _timeTotal) * 100, 2)
     _percentLinTotal = round((_timeFitLin / _timeTotal * 100), 2)
@@ -83,16 +83,16 @@ def printDataStatistics(output, _DATA, x, x_test):
 
 
 def printMiscStatsDualSvm(clf, raw_output):
-    gauss_stat = str(clf._nGauss) + " (" + str(
-        round((float(clf._nGauss) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%);"
-    lin_stat = str(clf._nLin) + " \t(" + str(
-        round((float(clf._nLin) / float(clf._nGauss + clf._nLin) * 100), 2)) + "%);"
-    dec_margin = str(round(clf._margins[1], 3)) + ";"
-    lin_c = toPowerOfTen(clf._linSVC.C) + ";"
-    gauss_c = toPowerOfTen(clf._gaussSVC.C) + ";"
-    gauss_gamma = toPowerOfTen(clf._gaussSVC.gamma) + ";"
+    gauss_stat = str(clf.n_gauss) + " (" + str(
+        round((float(clf.n_gauss) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
+    lin_stat = str(clf.n_lin) + " \t(" + str(
+        round((float(clf.n_lin) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
+    dec_margin = str(round(clf.margins[1], 3)) + ";"
+    lin_c = toPowerOfTen(clf.lin_svc.C) + ";"
+    gauss_c = toPowerOfTen(clf.gauss_svc.C) + ";"
+    gauss_gamma = toPowerOfTen(clf.gauss_svc.gamma) + ";"
     try:
-        n_gaussSVs = str(clf._gaussSVC.n_support_[0] + clf._gaussSVC.n_support_[1]) + ";"
+        n_gaussSVs = str(clf.gauss_svc.n_support_[0] + clf.gauss_svc.n_support_[1]) + ";"
     except AttributeError:
         n_gaussSVs = "0;"
 
@@ -110,9 +110,9 @@ def printGridsearchStatisticsDualSvm(clf, output):
     output.write("Gridsearch")
     printLine(output, 20)
     output.write("\n")
-    tmp = "Gridsearch for linear?: " + clf._searchLin + "\n"
+    tmp = "Gridsearch for linear?: " + clf.search_lin + "\n"
     output.write(tmp)
-    tmp = "Gridsearch for gauss?: " + clf._searchGauss + "\n\n"
+    tmp = "Gridsearch for gauss?: " + clf.search_gauss + "\n\n"
     output.write(tmp)
 
 
@@ -187,9 +187,9 @@ def secondsToMilsec(s):
 def run(x, x_test, y, y_test, count, gridGauss, gridLin, raw_output):
         #Load the classifier
         clf = getClf("dualSvm")
-        clf._searchGauss = gridGauss
-        clf._searchLin = gridLin
-        clf._count = count
+        clf.search_gauss = gridGauss
+        clf.search_lin = gridLin
+        clf.count = count
 
         #Notice that the result can be distored by the gridsearch for the dual svm.
         timeStart = time.time()

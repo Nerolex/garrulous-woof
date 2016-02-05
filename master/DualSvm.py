@@ -20,9 +20,9 @@ class DualSvm(object):
         """
         The constructor of the class. Here the important members are initialized.
 
-        :param c_lin:      C parameter for linear svm
-        :param c_gauss:    C parameter for gaussian svm
-        :param gamma:     Gamma parameter for the gaussian svm
+        :param c_lin:      Penalty parameter C of the error term of the linear support vector machine.
+        :param c_gauss:    Penalty parameter C of the error term of gaussian support vector machine
+        :param gamma:     Kernel coefficient for the gaussian svm
         :param k:         k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
         :param search_gauss: Determines if gridSearch shall be used to determine best params for C and gamma for the gaussian svm.
         :param search_lin: Determines if gridSearch shall be used to determine best params for C for the linear svm.
@@ -54,7 +54,7 @@ class DualSvm(object):
     def c_lin(self):
         """
         The C parameter for the linear SVM.
-        @return: C for linear SVM
+        :return: C for linear SVM
         """
         return self._c_lin
 
@@ -64,15 +64,15 @@ class DualSvm(object):
         self._lin_svc(C=value)
 
     @property
-    def cGauss(self):
+    def c_gauss(self):
         """
         The C parameter for the gauss SVM.
-        @return: C for gauss SVM
+        :return: C for gauss SVM
         """
         return self._c_gauss
 
-    @cGauss.setter
-    def cGauss(self, value):
+    @c_gauss.setter
+    def c_gauss(self, value):
         self._c_gauss = value
         self._gauss_svc(C=value)
 
@@ -80,7 +80,7 @@ class DualSvm(object):
     def gamma(self):
         """
         The gamma parameter for the gauss SVM.
-        @return: gamma for gauss SVM
+        :return: gamma for gauss SVM
         """
         return self._gamma
 
@@ -94,19 +94,35 @@ class DualSvm(object):
         """
         The percentage of points that should be given to the second classifier.
 
-        @return: k
+        :return: k
         """
         return self._k
 
+    @property
+    def time_fit_lin(self):
+        return self._time_fit_lin
+
+    @property
+    def time_fit_gauss(self):
+        return self._time_fit_gauss
+
+    @property
+    def time_overhead(self):
+        return self._time_overhead
+
+    @property
+    def time_predict(self):
+        return self._time_predict
+
     @k.setter
-    def count(self, value):
+    def k(self, value):
         self._k = value
 
     @property
     def n_gauss(self):
         """
         The number of points that were used training the gauss SVM.
-        @return: n_gauss
+        :return: n_gauss
         """
         return self._n_gauss
 
@@ -118,7 +134,7 @@ class DualSvm(object):
     def n_lin(self):
         """
         The number of points that were used training the linear SVM.
-        @return: n_lin
+        :return: n_lin
         """
         return self._n_lin
 
@@ -132,7 +148,8 @@ class DualSvm(object):
         List with two elements. Defines the range of margins which is used in the predict() method to determine if a point should be given to the gauss svm.
         Values are 0 if all points should be classified by the linear classifier.
         Values are -1 if all points should be classified by the gaussian classifier.
-        @return: minMargin, maxMargin
+
+        :return: minMargin, maxMargin
         """
         return self._margins
 
@@ -144,13 +161,22 @@ class DualSvm(object):
     def verbose(self):
         """
         Debug parameter. Used to limit the logging level.
-        @return: self._verbose
+
+        :return: self._verbose
         """
         return self._verbose
 
     @verbose.setter
     def verbose(self, value):
         self._verbose = value
+
+    @property
+    def lin_svc(self):
+        return self._lin_svc
+
+    @property
+    def gauss_svc(self):
+        return self._gauss_svc
 
     # endregion
 
@@ -166,6 +192,8 @@ class DualSvm(object):
 
     def fit(self, X, y):
         """
+        Fit the model according to the given training data.
+
         Fits a linear SVC on the given data.
         Afterwards, certain datapoints are selected and given to a gaussian SVC. The selection is dependant on the attribute useFactor of this object.
 
@@ -286,9 +314,9 @@ class DualSvm(object):
     def score(self, X, y):
         """
         Method that calculates the score for a given test set X,y.
-        @param X: Test vector of datapoints
-        @param y: Test vector of labels
-        @return: score value
+        :param X: Test vector of datapoints
+        :param y: Test vector of labels
+        :return: score value
         """
         y_hat = self.predict(X)
         score = 0
@@ -340,9 +368,9 @@ class DualSvm(object):
         """
         Parameter tuning for the linear classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal values of the first grid.
 
-        @param X: Data x
-        @param y: Labels y
-        @return: Best parameters
+        :param X: Data x
+        :param y: Labels y
+        :return: Best parameters
         """
         self.console("Linear SVC: Starting coarse gridsearch for gaussian classifier.")
         # LinSvm gridSearch
@@ -372,9 +400,9 @@ class DualSvm(object):
         """
         Parameter tuning for the gauss classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal val
 
-        @param X: Data x
-        @param y: Labels y
-        @return: Best parameters
+        :param X: Data x
+        :param y: Labels y
+        :return: Best parameters
         """
         self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
         c_range = np.logspace(-2, 10, 13, base=10.0)
