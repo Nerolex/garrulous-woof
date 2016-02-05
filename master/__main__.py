@@ -19,7 +19,10 @@ def printLine(file, size):
 def getClf(clfType):
     if clfType == "dualSvm":
         # Load config file
-        config = open('master/dualsvm.conf', 'r')
+        try:
+            config = open('master/dualsvm.conf', 'r')
+        except(Exception):
+            config = open('dualsvm.conf', 'r')
         for line in config:
             split_line = line.split(":")
             if (split_line[0] == "cLin"):
@@ -241,7 +244,10 @@ def run_batch(data):
     header = data + " " + date
     header = header.replace(" ", "_")
     header = header.replace(":", "_")
-    file = 'master/output/' + header + ".csv"
+    try:
+        file = 'master/output/' + header + ".csv"
+    except(Exception):
+        file = 'output/' + header + ".csv"
     output = open(file, 'a')
     printHeader(output)
     printDataStatistics(output, data, x, x_test)

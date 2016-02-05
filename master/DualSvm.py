@@ -47,7 +47,10 @@ class DualSvm(object):
         self._lin_svc = LinearSVC(C=self._c_lin)
         self._gauss_svc = SVC(C=self._c_gauss, kernel="rbf", gamma=self._gamma)
 
-        self._debug_file = open('master/output/debug.txt', 'a')
+        try:
+            self._debug_file = open('master/output/debug.txt', 'a')
+        except(Exception):
+            self._debug_file = open('output/debug.txt', 'a')
 
     # region Getters and Setters
     @property
@@ -177,6 +180,23 @@ class DualSvm(object):
     @property
     def gauss_svc(self):
         return self._gauss_svc
+
+    @property
+    def search_gauss(self):
+        return self._search_gauss
+
+    @search_gauss.setter
+    def search_gauss(self, value):
+        self._search_gauss = value
+
+    @property
+    def search_lin(self):
+        return self._search_lin
+
+    @search_lin.setter
+    def search_lin(self, value):
+        self._search_lin = value
+
 
     # endregion
 

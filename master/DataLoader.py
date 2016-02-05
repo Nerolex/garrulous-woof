@@ -71,7 +71,7 @@ def load_skin():
 
 def load_libsvm_file(filename):
     '''
-    Method that loads a libsvm file and returns training and test np-arrays.
+    Method that loads a libsvm file and returns training and test np arrays.
 
     @param filename:
     @return:
