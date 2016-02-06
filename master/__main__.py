@@ -192,7 +192,7 @@ def run(x, x_test, y, y_test, k, gridGauss, gridLin, raw_output):
         clf = getClf("dualSvm")
         clf.search_gauss = gridGauss
         clf.search_lin = gridLin
-        clf.k = count
+        clf.k = k
 
         #Notice that the result can be distored by the gridsearch for the dual svm.
         timeStart = time.time()
