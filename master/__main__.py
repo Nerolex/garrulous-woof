@@ -187,12 +187,12 @@ def secondsToMilsec(s):
 
 #endregion
 
-def run(x, x_test, y, y_test, count, gridGauss, gridLin, raw_output):
+def run(x, x_test, y, y_test, k, gridGauss, gridLin, raw_output):
         #Load the classifier
         clf = getClf("dualSvm")
         clf.search_gauss = gridGauss
         clf.search_lin = gridLin
-        clf.count = count
+        clf.k = count
 
         #Notice that the result can be distored by the gridsearch for the dual svm.
         timeStart = time.time()
