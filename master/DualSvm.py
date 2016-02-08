@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
+import multiprocessing
 
 """
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
@@ -424,13 +425,14 @@ class DualSvm(object):
         :param y: Labels y
         :return: Best parameters
         """
+        n_cpu = multiprocessing.cpu_count()
+        print("Using multiprocessing. Avaible cores: " + str(n_cpu))
         self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
         c_range = np.logspace(-2, 10, 13, base=10.0)
         gamma_range = np.logspace(-9, 3, 13, base=10.0)
         param_grid = dict(gamma=gamma_range, C=c_range)
 
-        cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
+        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
         grid.fit(X, y)
         _c = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
@@ -441,7 +443,7 @@ class DualSvm(object):
         c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
         gamma_range_2 = np.linspace(_c - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
         param_grid = dict(gamma=gamma_range_2, C=c_range_2)
-        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, cv=cv, n_jobs=4)
+        grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
         grid.fit(X, y)
 
         _c = grid.best_params_['C']
