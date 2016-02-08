@@ -407,7 +407,7 @@ class DualSvm(object):
 
         c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
         param_grid = dict(C=c_range_2)
-        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
+        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
         grid.fit(X, y)
 
         _c = grid.best_params_['C']
