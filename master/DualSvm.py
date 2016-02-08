@@ -397,8 +397,7 @@ class DualSvm(object):
         # LinSvm gridSearch
         c_range = np.logspace(-2, 10, 13, base=10.0)
         param_grid = dict(C=c_range)
-        cv = StratifiedShuffleSplit(y, n_iter=5, test_size=0.2, random_state=42)
-        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, cv=cv, n_jobs=4)
+        grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
         grid.fit(X, y)
 
         _c = grid.best_params_['C']
