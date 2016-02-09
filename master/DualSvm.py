@@ -322,7 +322,7 @@ class DualSvm(object):
                 self.console("Finished predicting.")
             return predictions
 
-        if self._marings[1] == -1:  # (3)
+        if self._margins[1] == -1:  # (3)
             predictions = self._gauss_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
