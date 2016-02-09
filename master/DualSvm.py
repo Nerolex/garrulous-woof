@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
-import datetime
+import multiprocessing
 import time
 
 import numpy as np
-from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
-import multiprocessing
+
+import Console
 
 """
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
@@ -16,8 +16,8 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 
 
 class DualSvm(object):
-    def __init__(self, c_lin, c_gauss, gamma, k=0, search_gauss=False, search_lin=False,
-                 verbose=False):
+    def __init__(self, c_lin=0.001, c_gauss=10, gamma=0.01, k=0, search_gauss=False, search_lin=False,
+                 verbose=True):
         """
         The constructor of the class. Here the important members are initialized.
 
@@ -47,11 +47,6 @@ class DualSvm(object):
         # Intern objects
         self._lin_svc = LinearSVC(C=self._c_lin)
         self._gauss_svc = SVC(C=self._c_gauss, kernel="rbf", gamma=self._gamma)
-
-        try:
-            self._debug_file = open('master/output/debug.txt', 'a')
-        except(Exception):
-            self._debug_file = open('output/debug.txt', 'a')
 
     # region Getters and Setters
     @property
@@ -201,16 +196,6 @@ class DualSvm(object):
 
     # endregion
 
-    def console(self, str):
-        """
-        Debug function. Logs the timestamp for the given string in an external debug file.
-
-        :param str: String to be logged.
-        :return: none
-        """
-        time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
-        self._debug_file.write(time_str + str + "\n")
-
     def fit(self, X, y):
         """
         Fit the model according to the given training data.
@@ -224,24 +209,24 @@ class DualSvm(object):
         """
 
         if self._verbose:
-            self.console("Starting fitting process.\n")
+            Console.write("Starting fitting process.\n")
 
         # If set to True, this will search for the best C with gridsearch:
         if self._search_lin:
             if self._verbose:
-                self.console("Starting Gridsearch for linear SVC.")
+                Console.write("Starting Gridsearch for linear SVC.")
             self._c_lin = self.gridsearch_for_linear(X, y)
 
         if self._verbose:
-            self.console("Starting fitting process for linear SVC.")
+            Console.write("Starting fitting process for linear SVC.")
         time_start_lin = time.time()
         self._lin_svc.fit(X, y)
         self._time_fit_lin = time.time() - time_start_lin
         if self._verbose:
-            self.console("Completed fitting process for linear SVC.")
+            Console.write("Completed fitting process for linear SVC.")
 
         if self._verbose:
-            self.console("Sorting points for classifiers.")
+            Console.write("Sorting points for classifiers.")
         time_start_overhead = time.time()
 
         x, y, margins = self.get_points_close_to_hyperplane_by_count(X, y, self._k)
@@ -255,7 +240,7 @@ class DualSvm(object):
 
         self._time_overhead = time.time() - time_start_overhead
         if (self._verbose):
-            self.console("Sorting finished.")
+            Console.write("Sorting finished.")
 
         # Measure the number of points for linear classifier:
         self._n_lin = X.shape[0] - self._n_gauss
@@ -263,11 +248,11 @@ class DualSvm(object):
         # If set to True, this will search for the best C with gridsearch:
         if self._search_gauss and self._n_gauss != 0:
             if self._verbose:
-                self.console("Starting gridsearch for gaussian classifier.")
+                Console.write("Starting gridsearch for gaussian classifier.")
             self._c_gauss, self._gamma = self.gridsearch_for_gauss(x, y)
 
         if self._verbose:
-            self.console("Starting fitting process for gaussian SVC.")
+            Console.write("Starting fitting process for gaussian SVC.")
 
         time_start_gauss = time.time()
 
@@ -276,9 +261,9 @@ class DualSvm(object):
         self._time_fit_gauss = time.time() - time_start_gauss
 
         if self._verbose:
-            self.console("Completed fitting process for gaussian SVC.")
+            Console.write("Completed fitting process for gaussian SVC.")
         if self._verbose:
-            self.console("Finished fitting process.\n")
+            Console.write("Finished fitting process.\n")
 
     def predict(self, X):
         """
@@ -291,7 +276,7 @@ class DualSvm(object):
 
         time_start = time.time()
         if self._verbose:
-            self.console("Starting predicting.")
+            Console.write("Starting predicting.")
 
         """
         If-Construct to account for the border cases (all points for one classifier):
@@ -305,10 +290,10 @@ class DualSvm(object):
             predictions = self._lin_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
-                self.console("Finished predicting.")
+                Console.write("Finished predicting.")
             return predictions
 
-        if 0.0 < self.margins[1] < 1.0:  # (2)
+        if 0.0 < self._margins[1]:  # (2)
             fx = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
             gauss_indices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
             lin_indices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
@@ -319,14 +304,14 @@ class DualSvm(object):
             predictions[gauss_indices] = gauss_predictions
             self._time_predict = time.time() - time_start
             if self._verbose:
-                self.console("Finished predicting.")
+                Console.write("Finished predicting.")
             return predictions
 
         if self._margins[1] == -1:  # (3)
             predictions = self._gauss_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
-                self.console("Finished predicting.")
+                Console.write("Finished predicting.")
             return predictions
 
         # If no condition matched
@@ -393,7 +378,7 @@ class DualSvm(object):
         :param y: Labels y
         :return: Best parameters
         """
-        self.console("Linear SVC: Starting coarse gridsearch for gaussian classifier.")
+        Console.write("Linear SVC: Starting coarse gridsearch.")
         # LinSvm gridSearch
         c_range = np.logspace(-2, 10, 13, base=10.0)
         param_grid = dict(C=c_range)
@@ -402,8 +387,8 @@ class DualSvm(object):
 
         _c = grid.best_params_['C']
 
-        self.console("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
-        self.console("Linear SVC: Starting fine gridsearch:")
+        Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
+        Console.write("Linear SVC: Starting fine gridsearch:")
 
         c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
         param_grid = dict(C=c_range_2)
@@ -412,7 +397,7 @@ class DualSvm(object):
 
         _c = grid.best_params_['C']
         self._lin_svc.set_params(C=_c)
-        self.console("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
+        Console.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
 
         return _c
 
@@ -426,7 +411,7 @@ class DualSvm(object):
         """
         n_cpu = multiprocessing.cpu_count()
         print("Using multiprocessing. Avaible cores: " + str(n_cpu))
-        self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
+        Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
         c_range = np.logspace(-2, 2, 5, base=10.0)
         gamma_range = np.logspace(-2, 2, 5, base=10.0)
         param_grid = dict(gamma=gamma_range, C=c_range)
@@ -438,8 +423,8 @@ class DualSvm(object):
 
         print("First search complete. Starting second search...")
 
-        self.console("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
-        self.console("Gauss SVC: Starting fine for gaussian classifier.")
+        Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+        Console.write("Gauss SVC: Starting fine for gaussian classifier.")
 
         c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
         gamma_range_2 = np.linspace(_c - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
@@ -450,7 +435,7 @@ class DualSvm(object):
         _c = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
 
-        self.console("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+        Console.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
 
         self._gauss_svc.set_params(C=_c, gamma=_gamma)
         return _c, _gamma

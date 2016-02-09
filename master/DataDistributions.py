@@ -9,9 +9,6 @@ import numpy as np
 This module is for data generating purposes.
 """
 
-
-# TODO: Komplexere Datensaetze importieren
-
 def generateSinusCluster(size, location=0.0, scale=0.5, amplitude=0.2, freq=3):
     """
     Function that genrates a random gaussian cluster and separates between two classes with a sinus function.

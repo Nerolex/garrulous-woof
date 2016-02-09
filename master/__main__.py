@@ -1,53 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import datetime
 import time
 import warnings
 
-import sklearn.svm as SVC
-
-import DataLoader as dl
+import Console
+import Conversions
+import DataLoader
 import DualSvm as ds
 
 
-def printLine(file, size):
-    line = ""
-    for i in range(size):
-        line += "-"
-    file.write(line)
-
-def getClf(clfType):
-    if clfType == "dualSvm":
-        # Load config file
-        try:
-            config = open('master/dualsvm.conf', 'r')
-        except(Exception):
-            config = open('dualsvm.conf', 'r')
-        for line in config:
-            split_line = line.split(":")
-            if (split_line[0] == "cLin"):
-                cLin = float(split_line[1].strip("\n"))
-            if (split_line[0] == "cGauss"):
-                cGauss = float(split_line[1].strip("\n"))
-            if (split_line[0] == "gamma"):
-                gamma = float(split_line[1].strip("\n"))
-            if (split_line[0] == "searchLin"):
-                searchLin = split_line[1].strip("\n") == "True"
-            if (split_line[0] == "searchGauss"):
-                searchGauss = split_line[1].strip("\n") == "True"
-            if (split_line[0] == "verbose"):
-                verbose = split_line[1].strip("\n") == "True"
-        config.close()
-
-        return ds.DualSvm(cLin, cGauss, gamma, 0.0, searchGauss, searchLin, verbose)
-    elif clfType == "linear":
-        return SVC.LinearSVC(C=0.0001)
-    elif clfType == "gauss":
-        return SVC.SVC(kernel="rbf", C=100, gamma=10)
-
-
-# region Output methods
-def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
+def appendTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     _timeFitLin = clf.time_fit_lin  # SS_MSMS
     _timeFitGauss = clf.time_fit_gauss  # MM:SS
     _timeFitOver = clf.time_overhead  # MSMS
@@ -63,11 +25,11 @@ def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     _percentOverTotal = round((_timeFitOver / _timeTotal * 100), 2)
 
     # Bring Time data in readable format
-    _timeFit = secondsToHourMin(_timeTotal)
-    _timeFitLin = secondsToSecMilsec(_timeFitLin)
-    _timeFitGauss = secondsToMinSec(_timeFitGauss)
-    _timeFitOver = secondsToMilsec(_timeFitOver)
-    _timePredict = secondsToSecMilsec(_timePredict)
+    _timeFit = Conversions.secondsToHourMin(_timeTotal)
+    _timeFitLin = Conversions.secondsToSecMilsec(_timeFitLin)
+    _timeFitGauss = Conversions.secondsToMinSec(_timeFitGauss)
+    _timeFitOver = Conversions.secondsToMilsec(_timeFitOver)
+    _timePredict = Conversions.secondsToSecMilsec(_timePredict)
 
     raw_output[7].append(_timeFit + ";")
     raw_output[8].append(_timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)" + ";")
@@ -79,21 +41,15 @@ def printTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     return raw_output
 
 
-def printDataStatistics(output, _DATA, x, x_test):
-    tmp = _DATA + " (Tot: " + str(x.shape[0] + x_test.shape[0]) + " Train: " + str(x.shape[0]) + " Test: " + str(
-            x_test.shape[0]) + ")\n"
-    output.write(tmp)
-
-
-def printMiscStatsDualSvm(clf, raw_output):
+def appendMiscStatsDualSvm(clf, raw_output):
     gauss_stat = str(clf.n_gauss) + " (" + str(
         round((float(clf.n_gauss) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
     lin_stat = str(clf.n_lin) + " \t(" + str(
         round((float(clf.n_lin) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
     dec_margin = str(round(clf.margins[1], 3)) + ";"
-    lin_c = toPowerOfTen(clf.lin_svc.C) + ";"
-    gauss_c = toPowerOfTen(clf.gauss_svc.C) + ";"
-    gauss_gamma = toPowerOfTen(clf.gauss_svc.gamma) + ";"
+    lin_c = Conversions.toPowerOfTen(clf.lin_svc.C) + ";"
+    gauss_c = Conversions.toPowerOfTen(clf.gauss_svc.C) + ";"
+    gauss_gamma = Conversions.toPowerOfTen(clf.gauss_svc.gamma) + ";"
     try:
         n_gaussSVs = str(clf.gauss_svc.n_support_[0] + clf.gauss_svc.n_support_[1]) + ";"
     except AttributeError:
@@ -108,99 +64,30 @@ def printMiscStatsDualSvm(clf, raw_output):
     raw_output[6].append(n_gaussSVs)
 
 
-def printGridsearchStatisticsDualSvm(clf, output):
-    printLine(output, 20)
-    output.write("Gridsearch")
-    printLine(output, 20)
-    output.write("\n")
-    tmp = "Gridsearch for linear?: " + clf.search_lin + "\n"
-    output.write(tmp)
-    tmp = "Gridsearch for gauss?: " + clf.search_gauss + "\n\n"
-    output.write(tmp)
-
-
-def printHeader(output):
-    printLine(output, 20)
+def writeHeader(output):
     tmp = "Dual Svm run started on " + str(time.asctime(time.localtime(time.time())))
     output.write(tmp)
-    printLine(output, 20)
     output.write("\n")
 
 
-def console(str):
-    time_str = "[" + datetime.datetime.now().strftime('%H:%M:%S') + "]: "
-    print(time_str + str + "\n")
-#endregion
-
-#region Conversion Methods
-def toPowerOfTen(k):
-    return ("%.E" % k)
-
-
-def secondsToHourMin(s):
-    '''
-    @param s:
-    @return:
-    s -> HH:MM
-    '''
-    _m, _s = divmod(s, 60)
-    _h, _m = divmod(_m, 60)
-    result = "%dh %02dm" % (_h, _m)
-    return result
-
-
-def secondsToMinSec(s):
-    '''
-    @param s:
-    @return:
-    s->MM:SS
-    '''
-    _m, _s = divmod(s, 60)
-    _s = round(_s, 0)
-    result = "%dm %02ds" % (_m, _s)
-    return result
-
-
-def secondsToSecMilsec(s):
-    '''
-    @param s:
-    @return:
-    s-> SS:MSMS
-    '''
-    _s = s
-    _ms = round(s % 1, 3) * 1000
-    result = "%ds %03dms" % (_s, _ms)
-    return result
-
-
-def secondsToMilsec(s):
-    '''
-    @param s:
-    @return:
-    s-> MSMS
-    '''
-    _s = s
-    _ms = round(s, 3) * 1000
-    result = "%02dms" % (_ms)
-    return result
-
-
-#endregion
+def writeDataStatistics(output, _DATA, x, x_test):
+    tmp = _DATA + " (Tot: " + str(x.shape[0] + x_test.shape[0]) + " Train: " + str(x.shape[0]) + " Test: " + str(
+            x_test.shape[0]) + ")\n"
+    output.write(tmp)
 
 def run(x, x_test, y, y_test, k, gridGauss, gridLin, raw_output):
         #Load the classifier
-        clf = getClf("dualSvm")
+        clf = ds.DualSvm()
         clf.search_gauss = gridGauss
         clf.search_lin = gridLin
         clf.k = k
 
-        #Notice that the result can be distored by the gridsearch for the dual svm.
         timeStart = time.time()
         clf.fit(x, y)
         timeFit = time.time() - timeStart
 
-        printMiscStatsDualSvm(clf, raw_output)
-        printTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
+        appendMiscStatsDualSvm(clf, raw_output)
+        appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
 
 
 def run_batch(data):
@@ -223,38 +110,39 @@ def run_batch(data):
                   ]
 
     # Load the data
-    x, x_test, y, y_test = dl.load_data(data)
+    x, x_test, y, y_test = DataLoader.load_data(data)
     gridGauss = False
     gridLin = False
-    console("Starting batch run, " + data)
+    Console.write("Starting batch run, " + data)
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         if j == 0:
             gridLin = True
         if j == 1:
             gridGauss = True
-        console("Batch run " + str(j) + ", k = " + str(0.05 * j))
+        Console.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
         run(x, x_test, y, y_test, 0.05 * j, gridGauss, gridLin, raw_output)
         gridLin = False
         gridGauss = False
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         if i == 0:
             gridGauss = True
-        console("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
+        Console.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
         run(x, x_test, y, y_test, 0.2 * (i + 1), gridGauss, gridLin, raw_output)
         gridGauss = False
-    console("Batch run complete.")
+    Console.write("Batch run complete.")
 
     header = data + " " + date
     header = header.replace(" ", "_")
     header = header.replace(":", "_")
     try:
         file = 'master/output/' + header + ".csv"
+        output = open(file, 'a')
     except(Exception):
         file = 'output/' + header + ".csv"
-    output = open(file, 'a')
-    printHeader(output)
-    printDataStatistics(output, data, x, x_test)
+        output = open(file, 'a')
 
+    writeHeader(output)
+    writeDataStatistics(output, data, x, x_test)
     for row in raw_output:
         str_row = ""
         for cell in row:
@@ -271,4 +159,4 @@ if __name__ == '__main__':
     run_batch("cod-rna")
     run_batch("skin")
     run_batch("covtype")
-    print("Done!")
+    Console.write("Done!")
