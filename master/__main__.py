@@ -230,9 +230,12 @@ def run_batch(data):
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         if j == 0:
             gridLin = True
+        if j == 1:
+            gridGauss = True
         console("Batch run " + str(j) + ", k = " + str(0.05 * j))
         run(x, x_test, y, y_test, 0.05 * j, gridGauss, gridLin, raw_output)
         gridLin = False
+        gridGauss = False
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         if i == 0:
             gridGauss = True
