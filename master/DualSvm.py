@@ -427,14 +427,16 @@ class DualSvm(object):
         n_cpu = multiprocessing.cpu_count()
         print("Using multiprocessing. Avaible cores: " + str(n_cpu))
         self.console("Gauss SVC: Starting gridsearch for gaussian classifier.")
-        c_range = np.logspace(-2, 10, 13, base=10.0)
-        gamma_range = np.logspace(-9, 3, 13, base=10.0)
+        c_range = np.logspace(-2, 2, 5, base=10.0)
+        gamma_range = np.logspace(-2, 2, 5, base=10.0)
         param_grid = dict(gamma=gamma_range, C=c_range)
 
         grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
         grid.fit(X, y)
         _c = grid.best_params_['C']
         _gamma = grid.best_params_['gamma']
+
+        print("First search complete. Starting second search...")
 
         self.console("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
         self.console("Gauss SVC: Starting fine for gaussian classifier.")
