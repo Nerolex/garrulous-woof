@@ -308,7 +308,7 @@ class DualSvm(object):
                 self.console("Finished predicting.")
             return predictions
 
-        if 0.0 < self.margins[1] < 1.0:  # (2)
+        if 0.0 < self._margins[1] < 1.0:  # (2)
             fx = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
             gauss_indices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
             lin_indices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
