@@ -1,13 +1,89 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 
+import multiprocessing
 import time
 import warnings
+
+import numpy as np
+from sklearn.grid_search import GridSearchCV
+from sklearn.svm import SVC, LinearSVC
 
 import Console
 import Conversions
 import DataLoader
 import DualSvm as ds
 
+
+def gridsearch_for_linear(X, y):
+    """
+    Parameter tuning for the linear classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal values of the first grid.
+
+    :param X: Data x
+    :param y: Labels y
+    :return: Best parameters
+    """
+    Console.write("Linear SVC: Starting coarse gridsearch.")
+    # LinSvm gridSearch
+    c_range = np.logspace(-2, 10, 13, base=10.0)
+    param_grid = dict(C=c_range)
+    grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
+    grid.fit(X, y)
+
+    _c = grid.best_params_['C']
+
+    Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
+    Console.write("Linear SVC: Starting fine gridsearch:")
+
+    c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
+    param_grid = dict(C=c_range_2)
+    grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
+    grid.fit(X, y)
+
+    _c = grid.best_params_['C']
+    Console.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
+
+    return _c
+
+
+def gridsearch_for_gauss(X, y):
+    """
+    Parameter tuning for the gauss classifier in two stages. First tuning is done on a coarse grid, second on a finer grid at the position of the optimal val
+
+    :param X: Data x
+    :param y: Labels y
+    :return: Best parameters
+    """
+    n_cpu = multiprocessing.cpu_count()
+    print("Using multiprocessing. Avaible cores: " + str(n_cpu))
+    Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
+    c_range = np.logspace(-2, 2, 5, base=10.0)
+    gamma_range = np.logspace(-2, 2, 5, base=10.0)
+    param_grid = dict(gamma=gamma_range, C=c_range)
+
+    grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
+    grid.fit(X, y)
+    _c = grid.best_params_['C']
+    _gamma = grid.best_params_['gamma']
+
+    print("First search complete. Starting second search...")
+
+    Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+    Console.write("Gauss SVC: Starting fine for gaussian classifier.")
+
+    c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
+    gamma_range_2 = np.linspace(_gamma - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
+
+    param_grid = dict(gamma=gamma_range_2, C=c_range_2)
+    grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
+    grid.fit(X, y)
+
+    _c = grid.best_params_['C']
+    _gamma = grid.best_params_['gamma']
+
+    Console.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+
+    return _c, _gamma
 
 def appendTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     _timeFitLin = clf.time_fit_lin  # SS_MSMS
@@ -75,21 +151,6 @@ def writeDataStatistics(output, _DATA, x, x_test):
             x_test.shape[0]) + ")\n"
     output.write(tmp)
 
-def run(x, x_test, y, y_test, k, gridGauss, gridLin, raw_output):
-        #Load the classifier
-        clf = ds.DualSvm()
-        clf.search_gauss = gridGauss
-        clf.search_lin = gridLin
-        clf.k = k
-
-        timeStart = time.time()
-        clf.fit(x, y)
-        timeFit = time.time() - timeStart
-
-        appendMiscStatsDualSvm(clf, raw_output)
-        appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
-
-
 def run_batch(data):
     # Output
     date = str(time.asctime(time.localtime(time.time())))
@@ -111,24 +172,67 @@ def run_batch(data):
 
     # Load the data
     x, x_test, y, y_test = DataLoader.load_data(data)
-    gridGauss = False
-    gridLin = False
+    k = 0
+    c_lin, c_gauss, gamma = 0, 0, 0
     Console.write("Starting batch run, " + data)
+
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
-        if j == 0:
-            gridLin = True
-        if j == 1:
-            gridGauss = True
         Console.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
-        run(x, x_test, y, y_test, 0.05 * j, gridGauss, gridLin, raw_output)
-        gridLin = False
-        gridGauss = False
+
+        # Load the classifier
+        k = 0.05 * j
+        clf = ds.DualSvm()
+        clf.k = k
+
+        # Parameter Tuning
+        if j == 0:  # In the first run, calculate best parameters for linear svm
+            c_lin = gridsearch_for_linear(x, y)
+        else:
+            clf.c_lin = c_lin
+            clf.fit_lin_svc(x,
+                            y)  # Fit linear classifier beforehand. This is necessary for the get_points method to work correctly.
+            x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
+            c_gauss, gamma = gridsearch_for_gauss(x_gauss,
+                                                  y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
+
+        # Apply Parameters
+        clf.c_gauss = c_gauss
+        clf.gamma = gamma
+        clf.c_lin = c_lin
+
+        timeStart = time.time()
+        clf.fit(x, y)
+        timeFit = time.time() - timeStart
+
+        appendMiscStatsDualSvm(clf, raw_output)
+        appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
+
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
-        if i == 0:
-            gridGauss = True
         Console.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
-        run(x, x_test, y, y_test, 0.2 * (i + 1), gridGauss, gridLin, raw_output)
-        gridGauss = False
+
+        # Load the classifier
+        k = 0.2 * (i + 1)
+        clf = ds.DualSvm()
+        clf.k = k
+
+        if i == 0:
+            clf.c_lin = c_lin
+            clf.fit_lin_svc(x, y)
+            x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
+            c_gauss, gamma = gridsearch_for_gauss(x_gauss, y_gauss)
+
+        # Apply Parameters
+        clf.c_gauss = c_gauss
+        clf.gamma = gamma
+        clf.c_lin = c_lin
+
+        timeStart = time.time()
+        clf.fit(x, y)
+        timeFit = time.time() - timeStart
+
+        appendMiscStatsDualSvm(clf, raw_output)
+        appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
+
     Console.write("Batch run complete.")
 
     header = data + " " + date
