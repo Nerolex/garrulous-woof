@@ -27,7 +27,7 @@ def gridsearch_for_linear(X, y):
     # LinSvm gridSearch
     c_range = np.logspace(-2, 10, 13, base=10.0)
     param_grid = dict(C=c_range)
-    grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
+    grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)  # TODO Variable njobs
     grid.fit(X, y)
 
     _c = grid.best_params_['C']
