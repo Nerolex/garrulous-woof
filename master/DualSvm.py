@@ -14,7 +14,7 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 
 
 class DualSvm(object):
-    def __init__(self, c_lin=0.001, c_gauss=10, gamma=0.01, k=0, search_gauss=False, verbose=True):
+    def __init__(self, c_lin=0.001, c_gauss=10, gamma=0.01, k=0, verbose=True):
         """
         The constructor of the class. Here the important members are initialized.
 
@@ -40,7 +40,7 @@ class DualSvm(object):
         # Intern objects
         self._lin_svc = LinearSVC(C=self._c_lin)
         self._gauss_svc = SVC(C=self._c_gauss, kernel="rbf", gamma=self._gamma)
-        self._magins = [0, 0]
+        self._margins = [0, 0]
 
     # region Getters and Setters
     @property
@@ -186,7 +186,6 @@ class DualSvm(object):
         :param y: Target vector relative to X
         :return: Returns self.
         """
-        self._fit_called = True
 
         if self._verbose:
             Console.write("Starting fitting process.\n")
@@ -314,20 +313,20 @@ class DualSvm(object):
         # 3) count = 1 All points should be classified by the gaussian classifier.
 
         if n == 0 or k == 0.0:
-            x_inner = []
-            y_inner = []
+            x_gauss = []
+            y_gauss = []
             max_margin = 0
         if 0.0 < k < 1.0:
             indices = np.argpartition(margins, n)[:n]  # get the indices of the n smallest elements
-            x_inner = X[indices]
-            y_inner = y[indices]
+            x_gauss = X[indices]
+            y_gauss = y[indices]
             # Keep track of minimal and maximal margins
             max_margin = max(margins[indices])
         if k == 1.0:
-            x_inner = X
-            y_inner = y
+            x_gauss = X
+            y_gauss = y
             max_margin = -1
 
         margins = [-max_margin, max_margin]
 
-        return x_inner, y_inner, margins
+        return x_gauss, y_gauss, margins

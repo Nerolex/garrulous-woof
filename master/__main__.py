@@ -35,7 +35,7 @@ def gridsearch_for_linear(X, y):
     Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
     Console.write("Linear SVC: Starting fine gridsearch:")
 
-    c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
+    c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
     param_grid = dict(C=c_range_2)
     grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
     grid.fit(X, y)
@@ -55,10 +55,10 @@ def gridsearch_for_gauss(X, y):
     :return: Best parameters
     """
     n_cpu = multiprocessing.cpu_count()
-    print("Using multiprocessing. Avaible cores: " + str(n_cpu))
+    print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
     Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
-    c_range = np.logspace(-2, 2, 5, base=10.0)
-    gamma_range = np.logspace(-2, 2, 5, base=10.0)
+    c_range = np.logspace(-4, 4, 9, base=10.0)
+    gamma_range = np.logspace(-6, 2, 9, base=10.0)
     param_grid = dict(gamma=gamma_range, C=c_range)
 
     grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
@@ -71,8 +71,8 @@ def gridsearch_for_gauss(X, y):
     Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
     Console.write("Gauss SVC: Starting fine for gaussian classifier.")
 
-    c_range_2 = np.linspace(_c - 0.2 * _c, _c + 0.2 * _c, num=5)
-    gamma_range_2 = np.linspace(_gamma - 0.2 * _gamma, _gamma + 0.2 * _gamma, num=5)
+    c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
+    gamma_range_2 = np.linspace(_gamma - 0.5 * _gamma, _gamma + 0.5 * _gamma, num=5)
 
     param_grid = dict(gamma=gamma_range_2, C=c_range_2)
     grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
