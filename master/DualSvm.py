@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+import random
 import time
 
 import numpy as np
@@ -14,9 +15,19 @@ This module implements a dual SVM approach to accelerate the fitting and predict
 
 
 class DualSvm(object):
-    def __init__(self, c_lin=0.001, c_gauss=10, gamma=0.01, k=0, verbose=True):
+    """
+    This is is the implementation of a combined Support Vector classifier.
+    The goal is to trade accuracy for speed by giving the 'hardest' points to the second classifier.
+    The combined classifier consists of a linearSVC classifier (less accurate) and a SVC classifier with RBF-Kernel (more accurate).
+
+    The user has to set a trade-off parameter k, which determines how many points percentage-wise are given to the second classifier.
+    The points are chosen according to their distance to the hyperplane of the linear classifier.
+
+    """
+
+    def __init__(self, use_distance=True, c_lin=0.001, c_gauss=10, gamma=0.01, k=0, verbose=True):
         """
-        The constructor of the class. Here the important members are initialized.
+        The constructor of the class.
 
         :param c_lin:      Penalty parameter C of the error term of the linear support vector machine.
         :param c_gauss:    Penalty parameter C of the error term of gaussian support vector machine
@@ -26,7 +37,7 @@ class DualSvm(object):
         :return:          Returns self.
 
         """
-
+        self._use_distance = use_distance
         # Parameters
         self._c_lin = c_lin
         self._c_gauss = c_gauss
@@ -40,14 +51,13 @@ class DualSvm(object):
         # Intern objects
         self._lin_svc = LinearSVC(C=self._c_lin)
         self._gauss_svc = SVC(C=self._c_gauss, kernel="rbf", gamma=self._gamma)
-        self._margins = [0, 0]
+        self._gauss_distance = 0
 
     # region Getters and Setters
     @property
     def c_lin(self):
         """
         The C parameter for the linear SVM.
-        :return: C for linear SVM
         """
         return self._c_lin
 
@@ -60,7 +70,6 @@ class DualSvm(object):
     def c_gauss(self):
         """
         The C parameter for the gauss SVM.
-        :return: C for gauss SVM
         """
         return self._c_gauss
 
@@ -73,7 +82,6 @@ class DualSvm(object):
     def gamma(self):
         """
         The gamma parameter for the gauss SVM.
-        :return: gamma for gauss SVM
         """
         return self._gamma
 
@@ -86,8 +94,6 @@ class DualSvm(object):
     def k(self):
         """
         The percentage of points that should be given to the second classifier.
-
-        :return: k
         """
         return self._k
 
@@ -115,7 +121,6 @@ class DualSvm(object):
     def n_gauss(self):
         """
         The number of points that were used training the gauss SVM.
-        :return: n_gauss
         """
         return self._n_gauss
 
@@ -127,7 +132,6 @@ class DualSvm(object):
     def n_lin(self):
         """
         The number of points that were used training the linear SVM.
-        :return: n_lin
         """
         return self._n_lin
 
@@ -136,26 +140,20 @@ class DualSvm(object):
         self._n_lin = value
 
     @property
-    def margins(self):
+    def gauss_distance(self):
         """
-        List with two elements. Defines the range of margins which is used in the predict() method to determine if a point should be given to the gauss svm.
-        Values are 0 if all points should be classified by the linear classifier.
-        Values are -1 if all points should be classified by the gaussian classifier.
-
-        :return: minMargin, maxMargin
+        The maximal distance from the hyperplane for the data in the gauss set.
         """
-        return self._margins
+        return self._gauss_distance
 
-    @margins.setter
-    def margins(self, value):
-        self._margins = value
+    @gauss_distance.setter
+    def gauss_distance(self, value):
+        self._gauss_distance = value
 
     @property
     def verbose(self):
         """
         Debug parameter. Used to limit the logging level.
-
-        :return: self._verbose
         """
         return self._verbose
 
@@ -200,12 +198,12 @@ class DualSvm(object):
             Console.write("Sorting points for classifiers.")
 
         time_start_overhead = time.time()
-        x, y, margins = self.get_points_close_to_hyperplane_by_count(X, y, self._k)
+        x, y, gauss_distance = self.get_points_close_to_hyperplane_by_count(X, y, self._k)
         try:
             self._n_gauss = x.shape[0]  # Measure the number of points for gauss classifier:
         except AttributeError:
             self._n_gauss = len(x)
-        self._margins = margins
+        self._gauss_distance = gauss_distance
         self._time_overhead = time.time() - time_start_overhead
 
         if (self._verbose):
@@ -228,7 +226,7 @@ class DualSvm(object):
 
     def predict(self, X):
         """
-        Predicts the labels for the given data vector X. Uses the range _margins defined in the fit()-method to determine which classifier should predict which element in the data vector x.
+        Predicts the labels for the given data vector X. Uses the range _gauss_distance defined in the fit()-method to determine which classifier should predict which element in the data vector x.
 
         :param X: Data vector.
         :return: Vector of predictions.
@@ -246,18 +244,10 @@ class DualSvm(object):
         (2) e.g. margins = [-0.3, 0.3] Points distributed between both. Standard case.
         (3) margins = [1, -1]: All points used for the gauss SVM. (fit()-Method set margins to -1)
         """
-
-        if self._margins[1] == 0.0:  # (1)
-            predictions = self._lin_svc.predict(X)
-            self._time_predict = time.time() - time_start
-            if self._verbose:
-                Console.write("Finished predicting.")
-            return predictions
-
-        if 0.0 < self._margins[1]:  # (2)
-            fx = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
-            gauss_indices = np.where(np.logical_and(self._margins[0] <= fx, fx < self._margins[1]))
-            lin_indices = np.where(np.logical_or(self._margins[0] > fx, fx >= self._margins[1]))
+        if not self._use_distance and 0 < self._k < 1.0:
+            n = np.ceil(self._k * X.shape[0])  # Random ziehen.
+            gauss_indices = random.sample(np.arange(X.shape[0]), int(n))
+            lin_indices = np.setdiff1d(np.arange(X.shape[0]), gauss_indices)
             lin_predictions = self._lin_svc.predict(X[lin_indices])
             gauss_predictions = self._gauss_svc.predict(X[gauss_indices])
             predictions = np.zeros(len(lin_predictions) + len(gauss_predictions))
@@ -268,7 +258,28 @@ class DualSvm(object):
                 Console.write("Finished predicting.")
             return predictions
 
-        if self._margins[1] == -1:  # (3)
+        if self._gauss_distance == 0.0:  # (1)
+            predictions = self._lin_svc.predict(X)
+            self._time_predict = time.time() - time_start
+            if self._verbose:
+                Console.write("Finished predicting.")
+            return predictions
+
+        if 0.0 < self._gauss_distance:  # (2)
+            fx = abs(self._lin_svc.decision_function(X)) / np.linalg.norm(self._lin_svc.coef_[0])
+            gauss_indices = np.where(fx < self._gauss_distance)
+            lin_indices = np.where(fx >= self._gauss_distance)
+            lin_predictions = self._lin_svc.predict(X[lin_indices])
+            gauss_predictions = self._gauss_svc.predict(X[gauss_indices])
+            predictions = np.zeros(len(lin_predictions) + len(gauss_predictions))
+            predictions[lin_indices] = lin_predictions
+            predictions[gauss_indices] = gauss_predictions
+            self._time_predict = time.time() - time_start
+            if self._verbose:
+                Console.write("Finished predicting.")
+            return predictions
+
+        if self._gauss_distance == -1:  # (3)
             predictions = self._gauss_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
@@ -315,18 +326,35 @@ class DualSvm(object):
         if n == 0 or k == 0.0:
             x_gauss = []
             y_gauss = []
-            max_margin = 0
+            max_distance = 0
         if 0.0 < k < 1.0:
             indices = np.argpartition(margins, n)[:n]  # get the indices of the n smallest elements
             x_gauss = X[indices]
             y_gauss = y[indices]
             # Keep track of minimal and maximal margins
-            max_margin = max(margins[indices])
+            max_distance = max(margins[indices])
+
+            if np.unique(y_gauss).size == 1 and k + 0.05 < 1:  # All values are equal
+                x_gauss, y_gauss, max_distance = self.get_points_close_to_hyperplane_by_count(X, y, k + 0.05)
         if k == 1.0:
             x_gauss = X
             y_gauss = y
-            max_margin = -1
+            max_distance = -1
 
-        margins = [-max_margin, max_margin]
+        return x_gauss, y_gauss, max_distance
 
-        return x_gauss, y_gauss, margins
+    def get_sample_of_points(self, X, y, k):
+        """
+        Helper method for determining the subset of points to be given to the gaussian classifier.
+
+        :param X: Array of unlabeled datapoints.
+        :param k: k has to be in the range [0,1]. It determines which percentage of closest points should be given to the gaussian svm, sorted by their margins.
+        :return: Returns data vectors x_inner, y_inner and margins. x_inner and y_inner represent the labeled subset which will be given to the gaussian svm. margins is a list with to elements, which represents the interval, in which the gaussian classifier should be used. This is used in the predict()-method.
+        """
+        n = np.ceil(k * X.shape[0])
+        xy = random.sample(zip(X, y), n)
+        x_gauss = xy[:, 0]
+        y_gauss = xy[:, 1]
+        max_distance = -1
+
+        return x_gauss, y_gauss, max_distance

@@ -16,6 +16,12 @@ def load_data(dataType):
         x, x_test, y, y_test = load_banana()
     elif dataType == "skin":
         x, x_test, y, y_test = load_skin()
+    elif dataType == "cluster":
+        x, x_test, y, y_test = dd.generateNonLinearClusters(10000)
+    elif dataType == "clusterx":
+        x, x_test, y, y_test = dd.generateNonLinearClusters(10000, x_noise=True)
+    elif dataType == "clustery":
+        x, x_test, y, y_test = dd.generateNonLinearClusters(10000, y_noise=True)
     else:
         x, x_test, y, y_test = load_libsvm_file(dataType)
     return x, x_test, y, y_test

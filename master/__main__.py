@@ -35,7 +35,8 @@ def gridsearch_for_linear(X, y):
     Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
     Console.write("Linear SVC: Starting fine gridsearch:")
 
-    c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
+    # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
+    c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
     param_grid = dict(C=c_range_2)
     grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=4)
     grid.fit(X, y)
@@ -71,8 +72,10 @@ def gridsearch_for_gauss(X, y):
     Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
     Console.write("Gauss SVC: Starting fine for gaussian classifier.")
 
-    c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
-    gamma_range_2 = np.linspace(_gamma - 0.5 * _gamma, _gamma + 0.5 * _gamma, num=5)
+    # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
+    c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
+    # gamma_range_2 = np.linspace(_gamma - 0.5 * _gamma, _gamma + 0.5 * _gamma, num=5)
+    gamma_range_2 = [_gamma - 0.5 * _gamma, _gamma, 2 * _gamma]
 
     param_grid = dict(gamma=gamma_range_2, C=c_range_2)
     grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
@@ -107,10 +110,13 @@ def appendTimeStatistics(raw_output, _CLASSIFIER, clf, timeFit, x_test, y_test):
     _timeFitOver = Conversions.secondsToMilsec(_timeFitOver)
     _timePredict = Conversions.secondsToSecMilsec(_timePredict)
 
-    raw_output[7].append(_timeFit + ";")
-    raw_output[8].append(_timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)" + ";")
-    raw_output[9].append(_timeFitLin + "\t(" + str(_percentLinTotal) + "%)" + ";")
-    raw_output[10].append(_timeFitOver + "\t(" + str(_percentOverTotal) + "%)" + ";")
+    raw_output[7].append(str(_timeTotal).replace(".", ",") + "s;")
+    # raw_output[8].append(_timeFitGauss + "\t(" + str(_percentGaussTotal) + "%)" + ";")
+    raw_output[8].append(_timeFitGauss + ";")
+    # raw_output[9].append(_timeFitLin + "\t(" + str(_percentLinTotal) + "%)" + ";")
+    raw_output[9].append(_timeFitLin + ";")
+    # raw_output[10].append(_timeFitOver + "\t(" + str(_percentOverTotal) + "%)" + ";")
+    raw_output[10].append(_timeFitOver + ";")
     raw_output[11].append(_timePredict + ";")
     raw_output[12].append(str(_error) + "%;")
 
@@ -122,7 +128,7 @@ def appendMiscStatsDualSvm(clf, raw_output):
         round((float(clf.n_gauss) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
     lin_stat = str(clf.n_lin) + " \t(" + str(
         round((float(clf.n_lin) / float(clf.n_gauss + clf.n_lin) * 100), 2)) + "%);"
-    dec_margin = str(round(clf.margins[1], 3)) + ";"
+    dec_margin = str(round(clf._gauss_distance, 3)) + ";"
     lin_c = Conversions.toPowerOfTen(clf.lin_svc.C) + ";"
     gauss_c = Conversions.toPowerOfTen(clf.gauss_svc.C) + ";"
     gauss_gamma = Conversions.toPowerOfTen(clf.gauss_svc.gamma) + ";"
@@ -173,32 +179,40 @@ def run_batch(data):
     # Load the data
     x, x_test, y, y_test = DataLoader.load_data(data)
     k = 0
-    c_lin, c_gauss, gamma = 0, 0, 0
+    c_lin = [10000000000, 10000000000, 10000000000, 10000000000, 10000000000, 10000000000, 10000000000, 10000000000,
+             10000000000]
+    c_gauss = [0, 800, 1, 1, 10, 10, 10, 10, 10]
+    gamma = [0, 0.01, 200, 200, 0.001, 0.001, 0.001, 0.001, 0.001]
     Console.write("Starting batch run, " + data)
+    gridLinear = False
+    gridGauss = False
+    use_distance = True
+    n = 0
 
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
+        n = j
         Console.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
-
         # Load the classifier
         k = 0.05 * j
-        clf = ds.DualSvm()
+        clf = ds.DualSvm(use_distance=use_distance)
         clf.k = k
 
         # Parameter Tuning
-        if j == 0:  # In the first run, calculate best parameters for linear svm
-            c_lin = gridsearch_for_linear(x, y)
+        if j == 0 and gridLinear:  # In the first run, calculate best parameters for linear svm
+            c_lin[n] = gridsearch_for_linear(x, y)
         else:
-            clf.c_lin = c_lin
+            clf.c_lin = c_lin[n]
             clf.fit_lin_svc(x,
                             y)  # Fit linear classifier beforehand. This is necessary for the get_points method to work correctly.
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss, gamma = gridsearch_for_gauss(x_gauss,
-                                                  y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
+            if gridGauss:
+                c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss,
+                                                            y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
 
         # Apply Parameters
-        clf.c_gauss = c_gauss
-        clf.gamma = gamma
-        clf.c_lin = c_lin
+        clf.c_gauss = c_gauss[n]
+        clf.gamma = gamma[n]
+        clf.c_lin = c_lin[n]
 
         timeStart = time.time()
         clf.fit(x, y)
@@ -208,23 +222,25 @@ def run_batch(data):
         appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
 
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
+        n = 4 + i
         Console.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
 
         # Load the classifier
         k = 0.2 * (i + 1)
-        clf = ds.DualSvm()
+        clf = ds.DualSvm(use_distance=use_distance)
         clf.k = k
 
         if i == 0:
-            clf.c_lin = c_lin
+            clf.c_lin = c_lin[n]
             clf.fit_lin_svc(x, y)
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss, gamma = gridsearch_for_gauss(x_gauss, y_gauss)
+            if gridGauss and 1 <= i < 3:
+                c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss, y_gauss)
 
         # Apply Parameters
-        clf.c_gauss = c_gauss
-        clf.gamma = gamma
-        clf.c_lin = c_lin
+        clf.c_gauss = c_gauss[n]
+        clf.gamma = gamma[n]
+        clf.c_lin = c_lin[n]
 
         timeStart = time.time()
         clf.fit(x, y)
@@ -259,8 +275,11 @@ def run_batch(data):
 # main program
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    run_batch("ijcnn")
+    #run_batch("ijcnn")
     run_batch("cod-rna")
-    run_batch("skin")
-    run_batch("covtype")
+    # run_batch("skin")
+    # run_batch("covtype")
+    # run_batch("cluster")
+    # run_batch("clusterx")
+    #run_batch("clustery")
     Console.write("Done!")
