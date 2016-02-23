@@ -139,7 +139,3 @@ def run(data):
         output.write(str(gamma) + ",")
     output.write("\n")
 
-
-run("skin")
-run("cod-rna")
-run("covtype")
