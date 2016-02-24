@@ -22,7 +22,7 @@ def gridsearch_for_linear(X, y):
     n_cpu = multiprocessing.cpu_count()
     Console.write("Linear SVC: Starting coarse gridsearch.")
     # LinSvm gridSearch
-    c_range = np.logspace(-2, 10, 13, base=10.0)
+    c_range = np.logspace(1, 10, 10, base=10.0)
     param_grid = dict(C=c_range)
     grid = GridSearchCV(LinearSVC(), param_grid=param_grid, n_jobs=n_cpu)
     grid.fit(X, y)
@@ -55,8 +55,8 @@ def gridsearch_for_gauss(X, y):
     n_cpu = multiprocessing.cpu_count()
     print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
     Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
-    c_range = np.logspace(-4, 4, 9, base=10.0)
-    gamma_range = np.logspace(-6, 2, 9, base=10.0)
+    c_range = np.logspace(1, 10, 10, base=10.0)
+    gamma_range = np.logspace(-3, 2, 6, base=10.0)
     param_grid = dict(gamma=gamma_range, C=c_range)
 
     grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
