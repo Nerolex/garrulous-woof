@@ -1,4 +1,6 @@
 import multiprocessing
+import sys
+import warnings
 
 import numpy as np
 from sklearn.grid_search import GridSearchCV
@@ -67,9 +69,7 @@ def gridsearch_for_gauss(X, y):
     Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
     Console.write("Gauss SVC: Starting fine for gaussian classifier.")
 
-    # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
     c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
-    # gamma_range_2 = np.linspace(_gamma - 0.5 * _gamma, _gamma + 0.5 * _gamma, num=5)
     gamma_range_2 = [_gamma - 0.5 * _gamma, _gamma, 2 * _gamma]
 
     param_grid = dict(gamma=gamma_range_2, C=c_range_2)
@@ -87,7 +87,7 @@ def gridsearch_for_gauss(X, y):
 def run(data):
     Console.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
-    file_string = "output/data" + "-params.txt"
+    file_string = "output/" + data + "-params.txt"
 
     k = 0
     n = 0
@@ -124,7 +124,7 @@ def run(data):
         clf = DualSvm.DualSvm(use_distance=True)
         clf.k = k
 
-        if k <= 6:
+        if k <= 0.6:
             clf.c_lin = c_lin
             clf.fit_lin_svc(x, y)
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
@@ -136,6 +136,12 @@ def run(data):
         output.write(str(value) + ",")
     output.write("\n")
     for value in gamma:
-        output.write(str(gamma) + ",")
+        output.write(str(value) + ",")
     output.write("\n")
 
+
+if __name__ == '__main__':
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    data = sys.argv[1]
+    run(data)
