@@ -7,7 +7,7 @@ import time
 import numpy as np
 from sklearn.svm import SVC, LinearSVC
 
-import Console
+from Tools import IOHelper
 
 """
 This module implements a dual SVM approach to accelerate the fitting and prediction process.
@@ -186,16 +186,16 @@ class DualSvm(object):
         """
 
         if self._verbose:
-            Console.write("Starting fitting process.\n")
-            Console.write("Starting fitting process for linear SVC.")
+            IOHelper.write("Starting fitting process.\n")
+            IOHelper.write("Starting fitting process for linear SVC.")
 
         time_start_lin = time.time()
         self._lin_svc.fit(X, y)
         self._time_fit_lin = time.time() - time_start_lin
 
         if self._verbose:
-            Console.write("Completed fitting process for linear SVC.")
-            Console.write("Sorting points for classifiers.")
+            IOHelper.write("Completed fitting process for linear SVC.")
+            IOHelper.write("Sorting points for classifiers.")
 
         time_start_overhead = time.time()
         x, y, gauss_distance = self.get_points_close_to_hyperplane_by_count(X, y, self._k)
@@ -207,8 +207,8 @@ class DualSvm(object):
         self._time_overhead = time.time() - time_start_overhead
 
         if (self._verbose):
-            Console.write("Sorting finished.")
-            Console.write("Starting fitting process for gaussian SVC.")
+            IOHelper.write("Sorting finished.")
+            IOHelper.write("Starting fitting process for gaussian SVC.")
 
         # Measure the number of points for linear classifier:
         self._n_lin = X.shape[0] - self._n_gauss
@@ -219,8 +219,8 @@ class DualSvm(object):
         self._time_fit_gauss = time.time() - time_start_gauss
 
         if self._verbose:
-            Console.write("Completed fitting process for gaussian SVC.")
-            Console.write("Finished fitting process.\n")
+            IOHelper.write("Completed fitting process for gaussian SVC.")
+            IOHelper.write("Finished fitting process.\n")
 
         return self
 
@@ -235,7 +235,7 @@ class DualSvm(object):
 
         time_start = time.time()
         if self._verbose:
-            Console.write("Starting predicting.")
+            IOHelper.write("Starting predicting.")
 
         """
         If-Construct to account for the border cases (all points for one classifier):
@@ -255,14 +255,14 @@ class DualSvm(object):
             predictions[gauss_indices] = gauss_predictions
             self._time_predict = time.time() - time_start
             if self._verbose:
-                Console.write("Finished predicting.")
+                IOHelper.write("Finished predicting.")
             return predictions
 
         if self._gauss_distance == 0.0:  # (1)
             predictions = self._lin_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
-                Console.write("Finished predicting.")
+                IOHelper.write("Finished predicting.")
             return predictions
 
         if 0.0 < self._gauss_distance:  # (2)
@@ -276,14 +276,14 @@ class DualSvm(object):
             predictions[gauss_indices] = gauss_predictions
             self._time_predict = time.time() - time_start
             if self._verbose:
-                Console.write("Finished predicting.")
+                IOHelper.write("Finished predicting.")
             return predictions
 
         if self._gauss_distance == -1:  # (3)
             predictions = self._gauss_svc.predict(X)
             self._time_predict = time.time() - time_start
             if self._verbose:
-                Console.write("Finished predicting.")
+                IOHelper.write("Finished predicting.")
             return predictions
 
         # If no condition matched

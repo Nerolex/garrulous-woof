@@ -5,14 +5,14 @@ import multiprocessing
 import time
 import warnings
 
+import Conversions
+import DataLoader
 import numpy as np
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
 
-import Console
-import Conversions
-import DataLoader
-import DualSvm as ds
+import Classifier as ds
+import Tools
 
 
 def gridsearch_for_linear(X, y):
@@ -23,7 +23,7 @@ def gridsearch_for_linear(X, y):
     :param y: Labels y
     :return: Best parameters
     """
-    Console.write("Linear SVC: Starting coarse gridsearch.")
+    Tools.write("Linear SVC: Starting coarse gridsearch.")
     # LinSvm gridSearch
     c_range = np.logspace(-2, 10, 13, base=10.0)
     param_grid = dict(C=c_range)
@@ -32,8 +32,8 @@ def gridsearch_for_linear(X, y):
 
     _c = grid.best_params_['C']
 
-    Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
-    Console.write("Linear SVC: Starting fine gridsearch:")
+    Tools.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
+    Tools.write("Linear SVC: Starting fine gridsearch:")
 
     # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
     c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
@@ -42,7 +42,7 @@ def gridsearch_for_linear(X, y):
     grid.fit(X, y)
 
     _c = grid.best_params_['C']
-    Console.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
+    Tools.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
 
     return _c
 
@@ -57,7 +57,7 @@ def gridsearch_for_gauss(X, y):
     """
     n_cpu = multiprocessing.cpu_count()
     print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
-    Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
+    Tools.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
     c_range = np.logspace(-4, 4, 9, base=10.0)
     gamma_range = np.logspace(-6, 2, 9, base=10.0)
     param_grid = dict(gamma=gamma_range, C=c_range)
@@ -69,8 +69,8 @@ def gridsearch_for_gauss(X, y):
 
     print("First search complete. Starting second search...")
 
-    Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
-    Console.write("Gauss SVC: Starting fine for gaussian classifier.")
+    Tools.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+    Tools.write("Gauss SVC: Starting fine for gaussian classifier.")
 
     # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
     c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
@@ -84,7 +84,7 @@ def gridsearch_for_gauss(X, y):
     _c = grid.best_params_['C']
     _gamma = grid.best_params_['gamma']
 
-    Console.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+    Tools.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
 
     return _c, _gamma
 
@@ -185,7 +185,7 @@ def run_batch(data):
              10000000000]
     c_gauss = [0, 800, 1, 1, 10, 10, 10, 10, 10]
     gamma = [0, 0.01, 200, 200, 0.001, 0.001, 0.001, 0.001, 0.001]
-    Console.write("Starting batch run, " + data)
+    Tools.write("Starting batch run, " + data)
     gridLinear = False
     gridGauss = False
     use_distance = True
@@ -193,7 +193,7 @@ def run_batch(data):
 
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         n = j
-        Console.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
+        Tools.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
         # Load the classifier
         k = 0.05 * j
         clf = ds.DualSvm(use_distance=use_distance)
@@ -225,7 +225,7 @@ def run_batch(data):
 
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         n = 4 + i
-        Console.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
+        Tools.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
 
         # Load the classifier
         k = 0.2 * (i + 1)
@@ -251,7 +251,7 @@ def run_batch(data):
         appendMiscStatsDualSvm(clf, raw_output)
         appendTimeStatistics(raw_output, "dualSvm", clf, timeFit, x_test, y_test)
 
-    Console.write("Batch run complete.")
+    Tools.write("Batch run complete.")
 
     header = data + " " + date
     header = header.replace(" ", "_")
@@ -284,4 +284,4 @@ if __name__ == '__main__':
     # run_batch("cluster")
     # run_batch("clusterx")
     # run_batch("clustery")
-    Console.write("Done!")
+    Tools.write("Done!")

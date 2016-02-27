@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import division
 
 import math
@@ -10,6 +11,7 @@ from sklearn.cross_validation import train_test_split
 """
 This module is for data generating purposes.
 """
+
 
 def generateSinusCluster(size, location=0.0, scale=0.5, amplitude=0.2, freq=3):
     """

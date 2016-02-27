@@ -1,14 +1,14 @@
+# -*- coding: utf-8 -*-
+
 import multiprocessing
-import sys
-import warnings
 
 import numpy as np
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
 
-import Console
-import DataLoader
-import DualSvm
+from Classifier import DualSvm
+from Data import DataLoader
+from Tools import IOHelper
 
 
 def gridsearch_for_linear(X, y):
@@ -20,7 +20,7 @@ def gridsearch_for_linear(X, y):
     :return: Best parameters
     """
     n_cpu = multiprocessing.cpu_count()
-    Console.write("Linear SVC: Starting coarse gridsearch.")
+    IOHelper.write("Linear SVC: Starting coarse gridsearch.")
     # LinSvm gridSearch
     c_range = np.logspace(1, 10, 10, base=10.0)
     param_grid = dict(C=c_range)
@@ -29,8 +29,8 @@ def gridsearch_for_linear(X, y):
 
     _c = grid.best_params_['C']
 
-    Console.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
-    Console.write("Linear SVC: Starting fine gridsearch:")
+    IOHelper.write("Linear SVC: Finished coarse gridsearch with params: C: " + str(_c))
+    IOHelper.write("Linear SVC: Starting fine gridsearch:")
 
     # c_range_2 = np.linspace(_c - 0.5 * _c, _c + 0.5 * _c, num=5)
     c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
@@ -39,7 +39,7 @@ def gridsearch_for_linear(X, y):
     grid.fit(X, y)
 
     _c = grid.best_params_['C']
-    Console.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
+    IOHelper.write("Linear SVC: Finished fine gridsearch with params: C: " + str(_c))
 
     return _c
 
@@ -54,7 +54,7 @@ def gridsearch_for_gauss(X, y):
     """
     n_cpu = multiprocessing.cpu_count()
     print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
-    Console.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
+    IOHelper.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
     c_range = np.logspace(1, 10, 10, base=10.0)
     gamma_range = np.logspace(-3, 2, 6, base=10.0)
     param_grid = dict(gamma=gamma_range, C=c_range)
@@ -66,8 +66,8 @@ def gridsearch_for_gauss(X, y):
 
     print("First search complete. Starting second search...")
 
-    Console.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
-    Console.write("Gauss SVC: Starting fine for gaussian classifier.")
+    IOHelper.write("Gauss SVC: Finished coarse gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+    IOHelper.write("Gauss SVC: Starting fine for gaussian classifier.")
 
     c_range_2 = [_c - 0.5 * _c, _c, 2 * _c]
     gamma_range_2 = [_gamma - 0.5 * _gamma, _gamma, 2 * _gamma]
@@ -79,15 +79,15 @@ def gridsearch_for_gauss(X, y):
     _c = grid.best_params_['C']
     _gamma = grid.best_params_['gamma']
 
-    Console.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
+    IOHelper.write("Gauss SVC: Finished fine gridsearch with params: C: " + str(_c) + " gamma: " + str(_gamma))
 
     return _c, _gamma
 
 
-def run(data):
-    Console.write("Starting parameter tuning for " + data)
+def gridsearch_and_save(data):
+    IOHelper.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
-    file_string = "output/" + data + "-params.txt"
+    file_string = "../output/" + data + "-params.txt"
 
     k = 0
     n = 0
@@ -98,10 +98,10 @@ def run(data):
 
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         n = j
-        Console.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
+        IOHelper.write("Batch run " + str(j) + ", k = " + str(0.05 * j))
         # Load the classifier
         k = 0.05 * j
-        clf = DualSvm.DualSvm(use_distance=True)
+        clf = DualSvm(use_distance=True)
         clf.k = k
 
         # Parameter Tuning
@@ -117,11 +117,11 @@ def run(data):
 
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         n = 4 + i
-        Console.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
+        IOHelper.write("Batch run " + str(i + 4) + ", k = " + str(0.2 * (i + 1)))
 
         # Load the classifier
         k = 0.2 * (i + 1)
-        clf = DualSvm.DualSvm(use_distance=True)
+        clf = DualSvm(use_distance=True)
         clf.k = k
 
         if k <= 0.6:
@@ -140,8 +140,32 @@ def run(data):
     output.write("\n")
 
 
-if __name__ == '__main__':
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+def loadParametersFromFile(data):
+    filestring = "output/" + data + "-params.txt"
+    file_ = open(filestring, 'r')
 
-    data = sys.argv[1]
-    run(data)
+    i = 0
+    c_lin = 0
+    c_gauss = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    gamma = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for line in file_:
+        # 0  C_lin
+        # 1  C_Gauss
+        # 2  gamma
+        if i == 0:
+            line = line.strip("\n")
+            c_lin = float(line)
+        if i == 1:
+            values = line.split(",")
+            for j in range(len(values) - 1):
+                c_gauss[j] = float(values[j])
+                if values[j] == 0:
+                    c_gauss[j] == c_gauss[j - 1]
+        if i == 2:
+            values = line.split(",")
+            for j in range(len(values) - 1):
+                gamma[j] = float(values[j])
+                if values[j] == 0:
+                    gamma[j] == gamma[j - 1]
+        i += 1
+    return c_lin, c_gauss, gamma
