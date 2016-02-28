@@ -97,7 +97,7 @@ def load_libsvm_file(filename):
     @param filename:
     @return:
     '''
-    filestring = "data/" + filename + "/" + filename
+    filestring = "../data/" + filename + "/" + filename
     try:
         x, y = da.load_svmlight_file(filestring + ".txt")
         x_test, y_test = da.load_svmlight_file(filestring + ".t")
