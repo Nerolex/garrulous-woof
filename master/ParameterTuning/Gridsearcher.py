@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import multiprocessing
+import os.path
+import sys
 
 import numpy as np
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
 
-from master.Classifier import DualSvm
-from master.Data import DataLoader
-from master.Tools import IOHelper
+from Classifier import DualSvm
+from Data import DataLoader
+from Tools import IOHelper
 
 
 def gridsearch_for_linear(X, y):
@@ -169,3 +171,6 @@ def loadParametersFromFile(data):
                     gamma[j] == gamma[j - 1]
         i += 1
     return c_lin, c_gauss, gamma
+
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
