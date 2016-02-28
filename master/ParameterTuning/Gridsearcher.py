@@ -6,9 +6,9 @@ import numpy as np
 from sklearn.grid_search import GridSearchCV
 from sklearn.svm import SVC, LinearSVC
 
-from Data import DataLoader
-from Tools import IOHelper
 from master.Classifier import DualSvm
+from master.Data import DataLoader
+from master.Tools import IOHelper
 
 
 def gridsearch_for_linear(X, y):
