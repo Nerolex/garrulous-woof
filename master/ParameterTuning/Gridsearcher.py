@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import multiprocessing
-import os.path
-import sys
 
 import numpy as np
 from sklearn.grid_search import GridSearchCV
@@ -171,6 +169,3 @@ def loadParametersFromFile(data):
                     gamma[j] == gamma[j - 1]
         i += 1
     return c_lin, c_gauss, gamma
-
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
