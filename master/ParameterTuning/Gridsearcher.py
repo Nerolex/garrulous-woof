@@ -87,7 +87,7 @@ def gridsearch_for_gauss(X, y):
 def gridsearch_and_save(data):
     IOHelper.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
-    file_string = "../output/" + data + "-params.txt"
+    file_string = "output/" + data + "-params.txt"
 
     k = 0
     n = 0

@@ -45,8 +45,8 @@ def load_codrna():
         x, y = da.load_svmlight_file("data/cod-rna/cod-rna.txt", 8)
         x_test, y_test = da.load_svmlight_file("data/cod-rna/cod-rna.t", 8)
     except(Exception):
-        x, y = da.load_svmlight_file("../../data/cod-rna/cod-rna.txt", 8)
-        x_test, y_test = da.load_svmlight_file("../../data/cod-rna/cod-rna.t", 8)
+        x, y = da.load_svmlight_file("../data/cod-rna/cod-rna.txt", 8)
+        x_test, y_test = da.load_svmlight_file("../data/cod-rna/cod-rna.t", 8)
     return x, x_test, y, y_test
 
 
@@ -75,8 +75,8 @@ def load_covtype():
         x, y = da.load_svmlight_file("data/covtype/covtype.sample04_train", 54)
         x_test, y_test = da.load_svmlight_file("data/covtype/covtype.sample04_test", 54)
     except(Exception):
-        x, y = da.load_svmlight_file("../../data/covtype/covtype.sample04_train", 54)
-        x_test, y_test = da.load_svmlight_file("../../data/covtype/covtype.sample04_test", 54)
+        x, y = da.load_svmlight_file("../data/covtype/covtype.sample04_train", 54)
+        x_test, y_test = da.load_svmlight_file("../data/covtype/covtype.sample04_test", 54)
     return x, x_test, y, y_test
 
 
@@ -85,7 +85,7 @@ def load_skin():
         data, target = da.load_svmlight_file("data/skin-nonskin/skin_nonskin.txt", 3)
         x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.6)
     except(Exception):
-        data, target = da.load_svmlight_file("../../data/skin-nonskin/skin_nonskin.txt", 3)
+        data, target = da.load_svmlight_file("../data/skin-nonskin/skin_nonskin.txt", 3)
         x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.6)
     return x, x_test, y, y_test
 
@@ -102,7 +102,7 @@ def load_libsvm_file(filename):
         x, y = da.load_svmlight_file(filestring + ".txt")
         x_test, y_test = da.load_svmlight_file(filestring + ".t")
     except IOError:
-        filestring = "../../data/" + filename + "/" + filename
+        filestring = "../data/" + filename + "/" + filename
         x, y = da.load_svmlight_file(filestring + ".txt")
         x_test, y_test = da.load_svmlight_file(filestring + ".t")
     return x, x_test, y, y_test
