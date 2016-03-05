@@ -14,4 +14,7 @@ if __name__ == '__main__':
     data.pop(0)
 
     for datastring in data:
-        Gridsearcher.gridsearch_and_save(data)
+        try:
+            Gridsearcher.gridsearch_and_save(data)
+        except Exception:
+            continue
