@@ -10,6 +10,8 @@ import Gridsearcher
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-    data = sys.argv[1]
-    # data = "covtype"
-    Gridsearcher.gridsearch_and_save(data)
+    data = sys.argv
+    data.pop(0)
+
+    for datastring in data:
+        Gridsearcher.gridsearch_and_save(data)
