@@ -15,6 +15,6 @@ if __name__ == '__main__':
 
     for datastring in data:
         try:
-            Gridsearcher.gridsearch_and_save(data)
+            Gridsearcher.gridsearch_and_save(datastring)
         except Exception:
             continue
