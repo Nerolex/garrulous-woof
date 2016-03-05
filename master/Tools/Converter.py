@@ -1,58 +1,18 @@
 # -*- coding: utf-8 -*-
 
-def toPowerOfTen(k):
-    return ("%.E" % k)
+from ParameterTuning import Gridsearcher
 
-
-def secondsToHourMin(s):
-    '''
-    @param s:
-    @return:
-    s -> HH:MM
-    '''
-    _m, _s = divmod(s, 60)
-    _h, _m = divmod(_m, 60)
-    result = "%dh %02dm" % (_h, _m)
-    return result
-
-
-def secondsToMinSec(s):
-    '''
-    @param s:
-    @return:
-    s->MM:SS
-    '''
-    _m, _s = divmod(s, 60)
-    _s = round(_s, 0)
-    result = "%dm %02ds" % (_m, _s)
-    return result
-
-
-def secondsToSecMilsec(s):
-    '''
-    @param s:
-    @return:
-    s-> SS:MSMS
-    '''
-    _s = s
-    _ms = round(s % 1, 3) * 1000
-    result = "%ds %03dms" % (_s, _ms)
-    return result
-
-
-def secondsToMilsec(s):
-    '''
-    @param s:
-    @return:
-    s-> MSMS
-    '''
-    _s = s
-    _ms = round(s, 3) * 1000
-    result = "%02dms" % (_ms)
-    return result
-
+'''
+This is a helper class for string conversions.
+'''
 
 def convertToLibSvm(data):
+    '''
+    Specific method for converting UCI data into libsvm format.
+
+    :param data: String, name of the data. Search is done automatically in the data directory.
+    :return: None. Converted file is save to a new file.
+    '''
     filestring = "../data/" + data + "/" + data
     filetypes = ['.txt', '.t']
 
@@ -80,3 +40,13 @@ def convertFile(filestring):
     for row in toWrite:
         for col in row:
             file1_output.write(col)
+
+
+def convertParamsToCsv(data, filestring):
+    cLin, cGauss, gamma = Gridsearcher.loadParametersFromFile(data)
+    k = [0, 0.05, 0.1, 0.15, 0.2, 0.4, 0.6, 0.8, 1.0]
+    output = open(filestring, 'w')
+    output.write("k, C Linear, C Gauss, Gamma Gauss\n")
+    output.write(str(k[0]) + "," + str(cLin) + ",,\n")
+    for i in range(1, 8, 1):
+        output.write(str(k[i]) + "," + "," + str(cGauss[i - 1]) + "," + str(gamma[-1]) + "\n")

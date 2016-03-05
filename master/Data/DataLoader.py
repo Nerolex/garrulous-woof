@@ -7,8 +7,18 @@ from sklearn.datasets import fetch_mldata
 
 import DataDistributions
 
+'''
+This module is for data loading purposes.
+The data in the data-directory is expected to be in libsvm-format.
+'''
 
 def load_data(dataType):
+    '''
+    Method for loading data. Returns training and test data.
+
+    :param dataType: String for the name of the data. The data will be automatically searched in the data directory.
+    :return: Returns 4 arrays: x, x_test, y, y_test
+    '''
     if dataType == "sinus":
         x, x_test, y, y_test = load_sinus()
     elif dataType == "cod-rna":
@@ -17,8 +27,8 @@ def load_data(dataType):
         x, x_test, y, y_test = load_covtype()
     elif dataType == "banana":
         x, x_test, y, y_test = load_banana()
-    elif dataType == "skin":
-        x, x_test, y, y_test = load_skin()
+    # elif dataType == "skin":
+    #    x, x_test, y, y_test = load_skin()
     elif dataType == "cluster":
         x, x_test, y, y_test = DataDistributions.generateNonLinearClusters(10000)
     elif dataType == "clusterx":
@@ -45,8 +55,8 @@ def load_codrna():
         x, y = da.load_svmlight_file("data/cod-rna/cod-rna.txt", 8)
         x_test, y_test = da.load_svmlight_file("data/cod-rna/cod-rna.t", 8)
     except(Exception):
-        x, y = da.load_svmlight_file("../../data/cod-rna/cod-rna.txt", 8)
-        x_test, y_test = da.load_svmlight_file("../../data/cod-rna/cod-rna.t", 8)
+        x, y = da.load_svmlight_file("../data/cod-rna/cod-rna.txt", 8)
+        x_test, y_test = da.load_svmlight_file("../data/cod-rna/cod-rna.t", 8)
     return x, x_test, y, y_test
 
 
@@ -75,27 +85,30 @@ def load_covtype():
         x, y = da.load_svmlight_file("data/covtype/covtype.sample04_train", 54)
         x_test, y_test = da.load_svmlight_file("data/covtype/covtype.sample04_test", 54)
     except(Exception):
-        x, y = da.load_svmlight_file("../../data/covtype/covtype.sample04_train", 54)
-        x_test, y_test = da.load_svmlight_file("../../data/covtype/covtype.sample04_test", 54)
+        x, y = da.load_svmlight_file("../data/covtype/covtype.sample04_train", 54)
+        x_test, y_test = da.load_svmlight_file("../data/covtype/covtype.sample04_test", 54)
     return x, x_test, y, y_test
 
 
+'''
 def load_skin():
     try:
         data, target = da.load_svmlight_file("data/skin-nonskin/skin_nonskin.txt", 3)
-        x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.6)
+        x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.7)
     except(Exception):
-        data, target = da.load_svmlight_file("../../data/skin-nonskin/skin_nonskin.txt", 3)
-        x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.6)
+        x, y = da.load_svmlight_file("../data/skin-nonskin/skin_nonskin.txt", 3)
+        x, x_test, y, y_test = cv.train_test_split(data, target, train_size=0.7)
+        #da.dump_svmlight_file(x,y, "../data/skin-nonskin/skin_nonskin_.txt")
+        #da.dump_svmlight_file(x_test,y_test, "../data/skin-nonskin/skin_nonskin_.t")
     return x, x_test, y, y_test
-
+'''
 
 def load_libsvm_file(filename):
     '''
     Method that loads a libsvm file and returns training and test np arrays.
 
-    @param filename:
-    @return:
+    @param filename: Filename of data to load
+    @return: Returns 4 arrays: x, x_test, y, y_test
     '''
     filestring = "../data/" + filename + "/" + filename
     try:

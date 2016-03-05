@@ -85,6 +85,11 @@ def gridsearch_for_gauss(X, y):
 
 
 def gridsearch_and_save(data):
+    '''
+    Method that searches the best parameters for the given data-set for the DualSvm for different k and saves it to a text file.
+    :param data: String, name of the data. Search is done automatically in the data directory.
+    :return: None. Output will be written to a textfile.
+    '''
     IOHelper.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
     file_string = "output/" + data + "-params.txt"
@@ -95,6 +100,14 @@ def gridsearch_and_save(data):
     c_lin = 0
     c_gauss = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     gamma = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    try:
+        output = open(file_string, 'w')
+    except Exception:
+        try:
+            output = open("../" + file_string, 'w')
+        except Exception:
+            output = open("error-params.txt", 'w')
 
     for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
         n = j
@@ -112,8 +125,8 @@ def gridsearch_and_save(data):
             clf.fit_lin_svc(x,
                             y)  # Fit linear classifier beforehand. This is necessary for the get_points method to work correctly.
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss,
-                                                        y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
+            c_gauss[n - 1], gamma[n - 1] = gridsearch_for_gauss(x_gauss,
+                                                                y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
 
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         n = 4 + i
@@ -128,9 +141,8 @@ def gridsearch_and_save(data):
             clf.c_lin = c_lin
             clf.fit_lin_svc(x, y)
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss, y_gauss)
+            c_gauss[n - 1], gamma[n - 1] = gridsearch_for_gauss(x_gauss, y_gauss)
 
-    output = open(file_string, 'w')
     output.write(str(c_lin) + "\n")
     for value in c_gauss:
         output.write(str(value) + ",")
@@ -141,6 +153,11 @@ def gridsearch_and_save(data):
 
 
 def loadParametersFromFile(data):
+    '''
+    Method for retrieving parameter data from a test file.
+    :param data: String, name of the data. Search is done automatically in the data directory.
+    :return: Returns parameters for DualSvm. Float c_lin, arrays c_gauss and gamma (for different k).
+    '''
     filestring = "output/" + data + "-params.txt"
     file_ = open(filestring, 'r')
 
@@ -149,23 +166,23 @@ def loadParametersFromFile(data):
     c_gauss = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     gamma = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     for line in file_:
+        line = line.strip("\n")
         # 0  C_lin
         # 1  C_Gauss
         # 2  gamma
         if i == 0:
-            line = line.strip("\n")
             c_lin = float(line)
         if i == 1:
             values = line.split(",")
-            for j in range(len(values) - 1):
+            for j in range(len(values)):
                 c_gauss[j] = float(values[j])
-                if values[j] == 0:
-                    c_gauss[j] == c_gauss[j - 1]
+                if float(values[j]) == 0.0:
+                    c_gauss[j] = c_gauss[j - 1]
         if i == 2:
             values = line.split(",")
-            for j in range(len(values) - 1):
+            for j in range(len(values)):
                 gamma[j] = float(values[j])
-                if values[j] == 0:
-                    gamma[j] == gamma[j - 1]
+                if float(values[j]) == 0.0:
+                    gamma[j] = gamma[j - 1]
         i += 1
     return c_lin, c_gauss, gamma
