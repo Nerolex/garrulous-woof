@@ -59,9 +59,9 @@ def run_batch(data, random_decision=False, n_iterations=1):
         IOHelper.write("Iteration " + str(i))
         # Load the data
         x, x_test, y, y_test = DataLoader.load_data(data)
-        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data)
+        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data, False)
         IOHelper.write("Starting batch run, " + data)
-        # 4,5
+
         for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
             n = j
             k = 0.05 * j
@@ -82,11 +82,11 @@ def run_batch(data, random_decision=False, n_iterations=1):
     end_result.c_lin = all_results[0].c_lin
     end_result.c_gauss = all_results[0].c_gauss
     end_result.gamma = all_results[0].gamma
+    end_result.n_gauss = all_results[0].n_gauss
+    end_result.n_lin = all_results[0].n_lin
     end_result.k = all_results[0].k
     for result in all_results:
         for i in range(length):
-            end_result.n_gauss[i] += result.n_gauss[i]
-            end_result.n_lin[i] += result.n_lin[i]
             end_result.sv_gauss[i] += result.sv_gauss[i]
             end_result.time_fit[i] += result.time_fit[i]
             end_result.time_fit_gauss[i] += result.time_fit_gauss[i]
@@ -95,7 +95,6 @@ def run_batch(data, random_decision=False, n_iterations=1):
             end_result.time_predict[i] += result.time_predict[i]
             end_result.error[i] += result.error[i]
     for i in range(length):
-        end_result.n_gauss[i] /= n_iterations
         end_result.sv_gauss[i] /= n_iterations
         end_result.time_fit[i] /= n_iterations
         end_result.time_fit_gauss[i] /= n_iterations
@@ -157,10 +156,37 @@ if __name__ == '__main__':
     # run_batch("shuttle", True, 5)
     # run_batch("skin", False, 5)
     # run_batch("skin", True, 5)
+    '''
+    Converter.convertParamsToCsv("skin", "output/skin-formatParams.csv")
+    Converter.convertParamsToCsv("covtype", "output/covtype-formatParams.csv")
+    Converter.convertParamsToCsv("shuttle", "output/shuttle-formatParams.csv")
+    Converter.convertParamsToCsv("ijcnn", "output/ijcnn-formatParams.csv")
+    Converter.convertParamsToCsv("mnist", "output/mnist-formatParams.csv")
+    '''
+    data = sys.argv
+    data.pop(0)
+    # data = ["skin"]
+    n = 5
 
-    # Converter.convertParamsToCsv("skin", "output/skin-formatParams.csv")
-    # Converter.convertParamsToCsv("covtype", "output/covtype-formatParams.csv")
-    # Converter.convertParamsToCsv("shuttle", "output/shuttle-formatParams.csv")
-    data = sys.argv[1]
-    run_batch(data, False, 5)
-    run_batch(data, True, 5)
+    for datastring in data:
+        run_batch(datastring, False, n)
+        run_batch(datastring, True, n)
+
+    '''
+
+    data = "ijcnn"
+    x, x_test, y, y_test = DataLoader.load_data(data)
+    print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    data = "shuttle"
+    x, x_test, y, y_test = DataLoader.load_data(data)
+    print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    data = "covtype"
+    x, x_test, y, y_test = DataLoader.load_data(data)
+    print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    data = "skin"
+    x, x_test, y, y_test = DataLoader.load_data(data)
+    print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    data = "mnist"
+    x, x_test, y, y_test = DataLoader.load_data(data)
+    print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    '''

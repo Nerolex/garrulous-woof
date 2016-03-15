@@ -92,7 +92,8 @@ def gridsearch_and_save(data):
     '''
     IOHelper.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
-    file_string = "output/" + data + "-params.txt"
+    file_string = "output/" + data + "-params.csv"
+    file_string = "output/" + data + "-params.csv"
 
     k = 0
     n = 0
@@ -125,8 +126,8 @@ def gridsearch_and_save(data):
             clf.fit_lin_svc(x,
                             y)  # Fit linear classifier beforehand. This is necessary for the get_points method to work correctly.
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss[n - 1], gamma[n - 1] = gridsearch_for_gauss(x_gauss,
-                                                                y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
+            c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss,
+                                                        y_gauss)  # In the following runs, do the same for the gaussian svm, as the subset of points for the classifier is changing
 
     for i in range(5):  # Bigger steps from 20 to 100: 20, 40, 60, 80, 100
         n = 4 + i
@@ -141,7 +142,7 @@ def gridsearch_and_save(data):
             clf.c_lin = c_lin
             clf.fit_lin_svc(x, y)
             x_gauss, y_gauss, margins = clf.get_points_close_to_hyperplane_by_count(x, y, k)
-            c_gauss[n - 1], gamma[n - 1] = gridsearch_for_gauss(x_gauss, y_gauss)
+            c_gauss[n], gamma[n] = gridsearch_for_gauss(x_gauss, y_gauss)
 
     output.write(str(c_lin) + "\n")
     for value in c_gauss:
@@ -152,13 +153,13 @@ def gridsearch_and_save(data):
     output.write("\n")
 
 
-def loadParametersFromFile(data):
+def loadParametersFromFile(data, use_one_val=False):
     '''
     Method for retrieving parameter data from a test file.
     :param data: String, name of the data. Search is done automatically in the data directory.
     :return: Returns parameters for DualSvm. Float c_lin, arrays c_gauss and gamma (for different k).
     '''
-    filestring = "output/" + data + "-params.txt"
+    filestring = "output/" + data + "-params.csv"
     file_ = open(filestring, 'r')
 
     i = 0
@@ -185,4 +186,10 @@ def loadParametersFromFile(data):
                 if float(values[j]) == 0.0:
                     gamma[j] = gamma[j - 1]
         i += 1
+    if use_one_val:
+        c_one_val = c_gauss[2]
+        gamma_one_val = gamma[2]
+        for i in range(len(c_gauss)):
+            c_gauss[i] = c_one_val
+            gamma[i] = gamma_one_val
     return c_lin, c_gauss, gamma

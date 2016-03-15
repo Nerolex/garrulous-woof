@@ -115,7 +115,12 @@ def load_libsvm_file(filename):
         x, y = da.load_svmlight_file(filestring + ".txt")
         x_test, y_test = da.load_svmlight_file(filestring + ".t")
     except IOError:
-        filestring = "../../data/" + filename + "/" + filename
-        x, y = da.load_svmlight_file(filestring + ".txt")
-        x_test, y_test = da.load_svmlight_file(filestring + ".t")
+        try:
+            filestring = "../../data/" + filename + "/" + filename
+            x, y = da.load_svmlight_file(filestring + ".txt")
+            x_test, y_test = da.load_svmlight_file(filestring + ".t")
+        except IOError:
+            filestring = "data/" + filename + "/" + filename
+            x, y = da.load_svmlight_file(filestring + ".txt")
+            x_test, y_test = da.load_svmlight_file(filestring + ".t")
     return x, x_test, y, y_test

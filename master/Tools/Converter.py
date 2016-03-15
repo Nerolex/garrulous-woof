@@ -48,5 +48,29 @@ def convertParamsToCsv(data, filestring):
     output = open(filestring, 'w')
     output.write("k, C Linear, C Gauss, Gamma Gauss\n")
     output.write(str(k[0]) + "," + str(cLin) + ",,\n")
-    for i in range(1, 8, 1):
-        output.write(str(k[i]) + "," + "," + str(cGauss[i - 1]) + "," + str(gamma[-1]) + "\n")
+    for i in range(1, 9, 1):
+        output.write(str(k[i]) + "," + "," + str(cGauss[i + 1]) + "," + str(gamma[i + 1]) + "\n")
+
+
+def convertParamsToCorrect(data, filestring):
+    cLin, cGauss, gamma = Gridsearcher.loadParametersFromFile(data)
+    output = open(filestring, 'w')
+    output.write(str(cLin) + "\n")
+
+    c_gauss = ""
+    cGauss.pop()
+    cGauss.insert(0, 0.0)
+    for element in cGauss:
+        c_gauss += str(element) + ","
+    c_gauss = c_gauss.rstrip(",")
+    c_gauss += "\n"
+    output.write(c_gauss)
+
+    g_amma = ""
+    gamma.pop()
+    gamma.insert(0, 0.0)
+    for element in gamma:
+        g_amma += str(element) + ","
+    g_amma = g_amma.rstrip(",")
+    g_amma += "\n"
+    output.write(g_amma)
