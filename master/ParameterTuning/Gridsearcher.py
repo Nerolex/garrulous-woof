@@ -52,11 +52,15 @@ def gridsearch_for_gauss(X, y):
     :param y: Labels y
     :return: Best parameters
     """
+
     n_cpu = multiprocessing.cpu_count()
     print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
     IOHelper.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
-    c_range = np.logspace(1, 10, 10, base=10.0)
-    gamma_range = np.logspace(-3, 2, 6, base=10.0)
+    # c_range = np.logspace(1, 10, 10, base=10.0)
+    # gamma_range = np.logspace(-3, 2, 6, base=10.0)
+    c_range = np.logspace(-4, 1, 6, base=10.0)
+    gamma_range = np.logspace(-9, -3, 6, base=10.0)
+
     param_grid = dict(gamma=gamma_range, C=c_range)
 
     grid = GridSearchCV(SVC(kernel="rbf"), param_grid=param_grid, n_jobs=n_cpu)
