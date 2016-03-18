@@ -56,10 +56,10 @@ def gridsearch_for_gauss(X, y):
     n_cpu = multiprocessing.cpu_count()
     print("Using multiprocessing. Avaiable cores: " + str(n_cpu))
     IOHelper.write("Gauss SVC: Starting gridsearch for gaussian classifier.")
-    # c_range = np.logspace(1, 10, 10, base=10.0)
-    # gamma_range = np.logspace(-3, 2, 6, base=10.0)
-    c_range = np.logspace(-4, 1, 6, base=10.0)
-    gamma_range = np.logspace(-9, -3, 6, base=10.0)
+    c_range = np.logspace(1, 10, 10, base=10.0)
+    gamma_range = np.logspace(-3, 2, 6, base=10.0)
+    # c_range = np.logspace(-4, 1, 6, base=10.0)
+    # gamma_range = np.logspace(-9, -3, 6, base=10.0)
 
     param_grid = dict(gamma=gamma_range, C=c_range)
 
@@ -97,7 +97,7 @@ def gridsearch_and_save(data):
     IOHelper.write("Starting parameter tuning for " + data)
     x, x_test, y, y_test = DataLoader.load_data(data)
     file_string = "output/" + data + "-params.csv"
-    file_string = "output/" + data + "-params.csv"
+    #file_string = "output/" + data + "-params.csv"
 
     k = 0
     n = 0
@@ -164,8 +164,10 @@ def loadParametersFromFile(data, use_one_val=False):
     :return: Returns parameters for DualSvm. Float c_lin, arrays c_gauss and gamma (for different k).
     '''
     filestring = "output/" + data + "-params.csv"
-    file_ = open(filestring, 'r')
-
+    # try:
+    #   file_ = open(filestring, 'r')
+    # except Exception:
+    file_ = open("master/" + filestring, 'r')
     i = 0
     c_lin = 0
     c_gauss = [0, 0, 0, 0, 0, 0, 0, 0, 0]

@@ -19,10 +19,10 @@ def createLongFile(data, date, end_result):
     filestring = filestring.replace(" ", "_")
     filestring = filestring.replace(":", "_")
     try:
-        file = 'master/output/' + filestring + ".csv"
+        file = 'master/output/singleTuning/' + filestring + ".csv"
         output = open(file, 'a')
     except(Exception):
-        file = 'output/' + filestring + ".csv"
+        file = 'output/singleTuning/' + filestring + ".csv"
         output = open(file, 'a')
 
     header = ["k, Points gaussian,", "Points linear,", "C linear,", "C gauss,", "gamma gauss,", "number SVs gauss,",
@@ -54,10 +54,10 @@ def createShortFile(data, date, end_result):
     filestring = filestring.replace(" ", "_")
     filestring = filestring.replace(":", "_")
     try:
-        file = 'master/output/' + filestring + ".csv"
+        file = 'master/output/singleTuning/' + filestring + ".csv"
         output = open(file, 'a')
     except(Exception):
-        file = 'output/' + filestring + ".csv"
+        file = 'output/singleTuning/' + filestring + ".csv"
         output = open(file, 'a')
 
     header = ["k,", "Error,", "Time Fit,", "Time Predict"]

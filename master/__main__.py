@@ -59,7 +59,7 @@ def run_batch(data, random_decision=False, n_iterations=1):
         IOHelper.write("Iteration " + str(i))
         # Load the data
         x, x_test, y, y_test = DataLoader.load_data(data)
-        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data, False)
+        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data, True)
         IOHelper.write("Starting batch run, " + data)
 
         for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
@@ -145,17 +145,6 @@ def run(use_distance, k, n, c_gauss, gamma, c_lin, x, x_test, y, y_test, results
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-    # run_batch("ijcnn", False, 5)
-    # run_batch("ijcnn", True, 5)
-    # run_batch("ijcnn")
-    # run_batch("covtype", False, 5)
-    # run_batch("covtype", True, 5)
-    # print("4")
-    # run_batch("covtype")
-    # run_batch("shuttle", False, 5)
-    # run_batch("shuttle", True, 5)
-    # run_batch("skin", False, 5)
-    # run_batch("skin", True, 5)
     '''
     Converter.convertParamsToCsv("skin", "output/skin-formatParams.csv")
     Converter.convertParamsToCsv("covtype", "output/covtype-formatParams.csv")
@@ -165,15 +154,13 @@ if __name__ == '__main__':
     '''
     data = sys.argv
     data.pop(0)
-    # data = ["skin"]
     n = 5
 
     for datastring in data:
         run_batch(datastring, False, n)
-        run_batch(datastring, True, n)
+        # run_batch(datastring, True, n)
 
     '''
-
     data = "ijcnn"
     x, x_test, y, y_test = DataLoader.load_data(data)
     print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
