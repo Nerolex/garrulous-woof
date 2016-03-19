@@ -47,7 +47,7 @@ class Run_Results(object):
             self.length = length
 
 
-def run_batch(data, random_decision=False, n_iterations=1):
+def run_batch(data, n_iterations=1, random_decision=False, singleParam=False):
     # Keep Track of the date of the start of the program
     date = str(time.asctime(time.localtime(time.time())))
 
@@ -59,7 +59,7 @@ def run_batch(data, random_decision=False, n_iterations=1):
         IOHelper.write("Iteration " + str(i))
         # Load the data
         x, x_test, y, y_test = DataLoader.load_data(data)
-        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data, True)
+        c_lin, c_gauss, gamma = Gridsearcher.loadParametersFromFile(data, singleParam)
         IOHelper.write("Starting batch run, " + data)
 
         for j in range(4):  # Smaller steps from 0 to 20: 0, 5, 10, 15
@@ -103,8 +103,8 @@ def run_batch(data, random_decision=False, n_iterations=1):
         end_result.time_predict[i] /= n_iterations
         end_result.error[i] /= n_iterations
 
-    IOHelper.createShortFile(data, date, end_result)
-    IOHelper.createLongFile(data, date, end_result)
+    IOHelper.createShortFile(data, date, end_result, random_decision, singleParam)
+    IOHelper.createLongFile(data, date, end_result, random_decision, singleParam)
 
 
 def run(use_distance, k, n, c_gauss, gamma, c_lin, x, x_test, y, y_test, results):
@@ -145,20 +145,15 @@ def run(use_distance, k, n, c_gauss, gamma, c_lin, x, x_test, y, y_test, results
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-    '''
-    Converter.convertParamsToCsv("skin", "output/skin-formatParams.csv")
-    Converter.convertParamsToCsv("covtype", "output/covtype-formatParams.csv")
-    Converter.convertParamsToCsv("shuttle", "output/shuttle-formatParams.csv")
-    Converter.convertParamsToCsv("ijcnn", "output/ijcnn-formatParams.csv")
-    Converter.convertParamsToCsv("mnist", "output/mnist-formatParams.csv")
-    '''
+
     data = sys.argv
     data.pop(0)
     n = 5
 
     for datastring in data:
-        run_batch(datastring, False, n)
-        # run_batch(datastring, True, n)
+        run_batch(datastring, n, False)
+        run_batch(datastring, n, True)
+        run_batch(datastring, 1, False, True)
 
     '''
     data = "ijcnn"
@@ -176,4 +171,11 @@ if __name__ == '__main__':
     data = "mnist"
     x, x_test, y, y_test = DataLoader.load_data(data)
     print(data + "Train: x " + str(x.shape[0]) + " y " + str(y.shape[0]) + " Test: x " + str(x_test.shape[0]) + " y: " + str(y_test.shape[0]))
+    '''
+    '''
+    Converter.convertParamsToCsv("skin", "output/skin-formatParams.csv")
+    Converter.convertParamsToCsv("covtype", "output/covtype-formatParams.csv")
+    Converter.convertParamsToCsv("shuttle", "output/shuttle-formatParams.csv")
+    Converter.convertParamsToCsv("ijcnn", "output/ijcnn-formatParams.csv")
+    Converter.convertParamsToCsv("mnist", "output/mnist-formatParams.csv")
     '''

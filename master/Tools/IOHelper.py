@@ -14,15 +14,20 @@ def write(str):
     debug.write(time_str + str + "\n")
 
 
-def createLongFile(data, date, end_result):
+def createLongFile(data, date, end_result, random_decision=False, singleParam=False):
     filestring = data + "_long_" + date
     filestring = filestring.replace(" ", "_")
     filestring = filestring.replace(":", "_")
+    directory = 'output/'
+    if random_decision:
+        filestring += "_random"
+    if singleParam:
+        filestring += "_single"
     try:
-        file = 'master/output/singleTuning/' + filestring + ".csv"
+        file = directory + filestring + ".csv"
         output = open(file, 'a')
     except(Exception):
-        file = 'output/singleTuning/' + filestring + ".csv"
+        file = 'master/' + directory + filestring + '.csv'
         output = open(file, 'a')
 
     header = ["k, Points gaussian,", "Points linear,", "C linear,", "C gauss,", "gamma gauss,", "number SVs gauss,",
@@ -49,15 +54,20 @@ def createLongFile(data, date, end_result):
         )
 
 
-def createShortFile(data, date, end_result):
+def createShortFile(data, date, end_result, random_decision=False, singleParam=False):
     filestring = data + "_short_" + date
     filestring = filestring.replace(" ", "_")
     filestring = filestring.replace(":", "_")
+    directory = 'output/'
+    if random_decision:
+        filestring += "_random"
+    if singleParam:
+        filestring += "_single"
     try:
-        file = 'master/output/singleTuning/' + filestring + ".csv"
+        file = directory + filestring + ".csv"
         output = open(file, 'a')
     except(Exception):
-        file = 'output/singleTuning/' + filestring + ".csv"
+        file = 'master/' + directory + filestring + '.csv'
         output = open(file, 'a')
 
     header = ["k,", "Error,", "Time Fit,", "Time Predict"]
