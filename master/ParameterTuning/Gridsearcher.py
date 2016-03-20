@@ -161,6 +161,7 @@ def loadParametersFromFile(data, use_one_val=False):
     '''
     Method for retrieving parameter data from a test file.
     :param data: String, name of the data. Search is done automatically in the data directory.
+    :param use_one_val: Boolean, if true, uses the value for k=0.1 for all values.
     :return: Returns parameters for DualSvm. Float c_lin, arrays c_gauss and gamma (for different k).
     '''
     filestring = "output/" + data + "-params.csv"

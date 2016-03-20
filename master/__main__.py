@@ -9,6 +9,10 @@ from Data import DataLoader
 from ParameterTuning import Gridsearcher
 from Tools import IOHelper
 
+'''
+Main module for the project. Takes a list of data strings as argument and automatically searches in /data/ for the corresponding dataset and loads the data.
+A DualSVM Classifier is created, trained and tested on the data. The results are saved to /ouput/NAME_OF_DATA.csv
+'''
 
 class Run_Results(object):
     def __init__(self):
@@ -48,6 +52,15 @@ class Run_Results(object):
 
 
 def run_batch(data, n_iterations=1, random_decision=False, singleParam=False):
+    '''
+    Represents multiple runs of the DualSVM classifier.
+
+    :param data: The data to load.
+    :param n_iterations: The number of runs on the data. Results will be averaged.
+    :param random_decision: If true, points are given to the second classifier by random means. If false, distance to hyperplane is used.
+    :param singleParam: If true, uses tuned values for C and Gamma for the second classifier for k=0.1. If false, uses all stored values in the corresponding params-file.
+    :return:
+    '''
     # Keep Track of the date of the start of the program
     date = str(time.asctime(time.localtime(time.time())))
 
@@ -108,6 +121,9 @@ def run_batch(data, n_iterations=1, random_decision=False, singleParam=False):
 
 
 def run(use_distance, k, n, c_gauss, gamma, c_lin, x, x_test, y, y_test, results):
+    '''
+    Represents a single run of the DualSVM classifier.
+    '''
     clf = DualSvm(use_distance=use_distance)
     clf.k = k
 
