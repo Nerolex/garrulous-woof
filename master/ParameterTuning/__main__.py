@@ -15,11 +15,12 @@ Performs a gridsearch with the module Gridsearcher and saves the results to outp
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-    data = sys.argv
-    data.pop(0)
+    data = ["cod-rna"]
+    # data = sys.argv
+    # data.pop(0)
 
     for datastring in data:
-        try:
-            Gridsearcher.gridsearch_and_save(datastring)
-        except Exception:
-            continue
+        # try:
+        Gridsearcher.gridsearch_and_save(datastring)
+        # except Exception:
+        #continue

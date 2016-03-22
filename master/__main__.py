@@ -167,7 +167,7 @@ if __name__ == '__main__':
     n = 5
 
     for datastring in data:
-        run_batch(datastring, n, False)
+        run_batch(datastring, 1, False)
         run_batch(datastring, n, True)
         run_batch(datastring, 1, False, True)
 

@@ -54,9 +54,11 @@ def load_codrna():
     try:
         x, y = da.load_svmlight_file("data/cod-rna/cod-rna.txt", 8)
         x_test, y_test = da.load_svmlight_file("data/cod-rna/cod-rna.t", 8)
+        x, x_test, y, y_test = cv.train_test_split(x, y, train_size=0.3)
     except(Exception):
-        x, y = da.load_svmlight_file("../data/cod-rna/cod-rna.txt", 8)
-        x_test, y_test = da.load_svmlight_file("../data/cod-rna/cod-rna.t", 8)
+        x, y = da.load_svmlight_file("../../data/cod-rna/cod-rna.txt", 8)
+        x_test, y_test = da.load_svmlight_file("../../data/cod-rna/cod-rna.t", 8)
+        x, x_test, y, y_test = cv.train_test_split(x, y, train_size=0.3)
     return x, x_test, y, y_test
 
 
